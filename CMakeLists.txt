@@ -9,7 +9,11 @@ pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-1.0)
 add_executable(rtspChaosClub
                 src/main.cpp
                 src/webserver.h
-                src/webserver.cpp)
+                src/webserver.cpp
+                src/application.h
+                src/application.cpp
+                src/webviewwindow.h
+                src/webviewwindow.cpp)
 
 target_link_libraries(rtspChaosClub PRIVATE
     PkgConfig::GSTREAMER

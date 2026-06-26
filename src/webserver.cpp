@@ -58,8 +58,11 @@ int WebServer::start()
     catch(const std::system_error& error)
     {
         std::cerr << error.what() << std::endl;
+        m_server.stop();
         return result = StartThreadFailed;
     }
+
+    m_server.wait_until_ready();
 
     if (!m_server.is_running())
     {

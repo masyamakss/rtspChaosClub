@@ -1,20 +1,11 @@
 #include <iostream>
-#include "webserver.h"
+#include "application.h"
 
-int main(int, char**){
+int main(int argc, char** argv){
 
     std::cout << "Hello, from rtspChaosClub!\n";
 
-    WebServer server;
+    Application app(argc, argv);
 
-    const int result = server.start();
-
-    std::cout << "Start result: " << result << '\n';
-    std::cout << "Port: " << server.port() << '\n';
-
-    std::cin.get();
-
-    server.stop();
-
-    return 0;
+    return app.startLaboratory();
 }
