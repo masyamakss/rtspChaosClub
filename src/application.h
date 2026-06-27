@@ -2,13 +2,15 @@
 #define APPLICATION_H
 
 #include "webserver.h"
+#include "webviewwindow.h"
+#include "embeddedresources.h"
 #include "gst/gst.h"
 
 
 class Application
 {
 public:
-    Application(int argc, char **argv);
+    Application();
     ~Application();
     Application& operator=(const Application&) = delete;
     Application(const Application&) = delete;
@@ -19,8 +21,7 @@ private:
 
     WebServer* m_server = nullptr;
 
-    int GstArgc;
-    char **GstArgv;
+    WebViewWindow window;
 
 };
 

@@ -1,11 +1,7 @@
 #include "application.h"
 
-Application::Application(int argc, char **argv)
-{
-    GstArgc = argc;
-    GstArgv = argv;
-    m_server = new WebServer();
-}
+Application::Application() : m_server(new WebServer())
+{}
 
 Application::~Application()
 {
@@ -15,10 +11,9 @@ Application::~Application()
 
 int Application::startLaboratory()
 {
-
     GError* gstError = nullptr;
 
-    if (!gst_init_check(&GstArgc, &GstArgv, &gstError))
+    if (!gst_init_check(nullptr, nullptr, &gstError))
     {
         std::string error = "GStreamer ran into a problem during start";
 
@@ -26,10 +21,14 @@ int Application::startLaboratory()
         {
             error = gstError->message;
             g_error_free(gstError);
-            error = nullptr;
+            gstError = nullptr;
         }
 
-        // ВЫВОД ВЕБ ОКНА С ОШИБКОЙ
+        std::cerr << error << '\n';
+
+        window.openErrorPage();
+        window.run();
+        return 1;
     }
 
     const int serverStartResult = m_server->start();
@@ -49,7 +48,15 @@ int Application::startLaboratory()
         std::cout << "Preferred port was unavailable.\n";
     }
 
-    std::cout << "Web server: http://127.0.0.1:" << m_server->port() << "/\n";
+    const std::string url =
+    "http://127.0.0.1:" +
+    std::to_string(m_server->port()) +
+    "/";
+
+    std::cout << "Web server: " << url << '\n';
+
+    window.openUrl(url);
+    window.run();
 
     return 0;
 }
