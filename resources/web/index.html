@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>RTSP Chaos Club</title>
+</head>
+
+<body>
+    <h1>RTSP Chaos Club</h1>
+
+    <p>Лаборатория запущена.</p>
+
+    <button>Запустить источник</button>
+
+    <label>
+        Скорость:
+        <input type="range" min="0" max="100" value="50">
+    </label>
+
+    <button id="testButton">Отправить POST</button>
+    
+    <script>
+        const testButton = document.getElementById("testButton");
+
+        testButton.addEventListener("click", () => {
+            fetch("api/test", {
+                method: "POST"
+            });
+        });
+    </script>
+</body>
+</html>

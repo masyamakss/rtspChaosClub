@@ -19,6 +19,7 @@ cmrc_add_resource_library(
     NAMESPACE web_resources
 
     resources/web/error.html
+    resources/web/index.html
 )
 
 add_executable(rtspChaosClub

@@ -6,6 +6,7 @@
 #include <string>
 #include "webview/webview.h"
 #include "embeddedresources.h"
+#include <iostream>
 
 
 class WebViewWindow

@@ -9,6 +9,8 @@ WebViewWindow::WebViewWindow() : m_webView(false, nullptr)
 
 void WebViewWindow::openUrl(const std::string& url)
 {
+    std::cerr << "WebView navigating to: " << url << '\n';
+    
     m_webView.navigate(url);
 }
 

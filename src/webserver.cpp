@@ -91,8 +91,24 @@ void WebServer::stop()
 void WebServer::configureRoutes()
 {
     m_server.Get("/", [](const httplib::Request& request, httplib::Response& response)
-    {
-        response.set_content("RTSP Chaos Club is running\n","text/plain");
+    {   
+
+        std::cerr << "GET / received\n";
+        const auto mainMenuHtml = EmbeddedResources::loadText("resources/web/index.html");
+
+        std::cout
+            << "index.html size: "
+            << mainMenuHtml.size()
+            << '\n';
+
+        response.set_content(mainMenuHtml,"text/html; charset=UTF-8");
+    });
+
+    m_server.Post("/api/test", [](const httplib::Request& request, httplib::Response& response)
+    {   
+
+        std::cerr << "POST / received\n";
+
     });
 
 }

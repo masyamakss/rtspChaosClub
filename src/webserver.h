@@ -3,6 +3,7 @@
 
 #include "httplib.h"
 #include <system_error>
+#include "embeddedresources.h"
 
 class WebServer
 {
