@@ -109,6 +109,8 @@ void WebServer::configureRoutes()
 
         std::cerr << "POST / received\n";
 
+        response.set_content("Response for POST!", "text/plain");
+
     });
 
 }
