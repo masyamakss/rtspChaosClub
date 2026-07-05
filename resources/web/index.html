@@ -3,31 +3,66 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
+    <link rel="stylesheet" href="/styles.css">
     <title>RTSP Chaos Club</title>
 </head>
 
 <body>
     <h1>RTSP Chaos Club</h1>
 
-    <p>Лаборатория запущена.</p>
+    <section class="panel">
+        
+        <h2>Source</h2>
 
-    <button>Запустить источник</button>
+        <div class="source-toggle-row">
+            <span>Generated video</span>
 
-    <label>
-        Скорость:
-        <input type="range" min="0" max="100" value="50">
-    </label>
+        <label class="switch">
+            <input id="sourceModeToggle" type="checkbox">
+            <span class="slider"></span>
+        </label>
 
-    <button id="testButton">Отправить POST</button>
-    
-    <script>
-        const testButton = document.getElementById("testButton");
+            <span>File video</span>
+        </div>
 
-        testButton.addEventListener("click", async () => { 
-            const response = await fetch("/api/test", {method: "POST"});
-            const text = await response.text();
-            testButton.textContent = text;
-        });
-    </script>
+        <div id="syntheticSettings" class="settings-block">
+            <h3>Generated video setting</h3>
+
+            <label>
+                Resolution:
+                <select id="resolutionSelect">
+                    <option value="1280x720">1280x720</option>
+                    <option value="1920x1080">1920x1080</option>
+                </select>
+            </label>
+
+            <label>
+                Cube speed:
+                <input id="cubeSpeedInput" type="range" min="0" max="100" value="50">
+            </label>
+
+            <label>
+                Background speed:
+                <input id="backgroundSpeedInput" type="range" min="0" max="100" value="50">
+            </label>
+        </div>
+
+        <div id="fileSettings" class="settings-block hidden">
+            <h3>File video settings</h3>
+
+            <label>
+                Video file:
+                <input id="videoFileInput" type="file" accept="video/*">
+            </label>
+        </div>
+
+    </section>
+
+    <button id="startButton">Запустить источник</button>
+    <p id="statusText">Status: idle</p>
+
+
+
+    <script src="/app.js"></script>
 </body>
 </html>

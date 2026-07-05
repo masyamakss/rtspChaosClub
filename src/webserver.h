@@ -2,8 +2,12 @@
 #define WEBSERVER_H
 
 #include "httplib.h"
-#include <system_error>
 #include "embeddedresources.h"
+#include "sourcecommands.h"
+
+#include <system_error>
+#include "json/json.h"
+
 
 class WebServer
 {
@@ -39,6 +43,8 @@ private:
     std::thread m_serverThread;
 
     void configureRoutes();
+
+    void tryBuildStartSourceCommand(Json::Value postRoot, StartSourceCommand& command, std::string& errorText);
 };
 
 #endif // WEBSERVER_H
