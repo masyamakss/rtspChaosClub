@@ -34,3 +34,36 @@ private:
 
       bool m_stopping = false;
 };
+
+InfoBus::InfoBus()
+{
+      m_workerThread = std::thread(&InfoBus::workerLoop, this);
+}
+
+InfoBus::~InfoBus()
+{
+      if (m_workerThread.joinable())
+      {
+            m_workerThread.join();
+      }
+}
+
+void InfoBus::workerLoop()
+{
+      while (true)
+      {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            
+            m_cv.wait(lock, [this]()
+            {
+                  return m_stopping || !m_tasks.empty();
+            });
+
+            if (m_stopping && m_tasks.empty())
+            {
+                  return;
+            }
+
+            
+      }
+}
