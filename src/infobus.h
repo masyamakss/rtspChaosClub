@@ -90,15 +90,18 @@ void InfoBus::post(const Event &event)
             handlersVector = it->second;
       }
 
-      for (auto func : handlersVector)
+      std::function<void()> funcForQueue([eventCopy = event, handlersVector]()
       {
-            std::function<void()> funcForQueue([eventCopy = event, func]()
+            for (const auto& func : handlersVector)
             {
                   func(&eventCopy);
-            });
+            }
+      });
+      {
             std::lock_guard<std::mutex> lock(m_mutex);
             m_tasks.push(funcForQueue);
       }
+
       m_cv.notify_one();
 }
 
