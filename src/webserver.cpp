@@ -160,6 +160,13 @@ void WebServer::configureRoutes()
         StartSourceCommand command;
         std::string errorOfFillingCommand = "";
         tryBuildStartSourceCommand(postRoot, command, errorOfFillingCommand);
+        if (errorOfFillingCommand != "")
+        {
+            std::cerr << "JSON is broken, cant build command\n";
+            response.status = 400;
+            response.set_content("JSON in POST body is broken", "text/plain");
+            return;
+        }
 
         std::string contentToSet = "WebServer got command to start";
 

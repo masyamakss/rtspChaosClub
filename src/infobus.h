@@ -6,6 +6,8 @@
 #include <mutex>
 #include <condition_variable>
 #include <thread>
+#include <unordered_map>
+
 class InfoBus
 {
 public:
@@ -64,6 +66,25 @@ void InfoBus::workerLoop()
                   return;
             }
 
+
             
       }
+}
+
+template<typename Event>
+void InfoBus::post(const Event &event)
+{
+
+}
+
+template<typename Event>
+void InfoBus::subscribe(std::function<void (const Event &)> handler)
+{
+        std::type_index typeIndex(typeid (Event));
+
+        std::function<void(const void*)> handlerWrappper([handler]()
+        {
+            handler;
+        });
+        m_handlers[typeIndex].push_back(handlerWrappper);
 }
