@@ -74,7 +74,32 @@ void InfoBus::workerLoop()
 template<typename Event>
 void InfoBus::post(const Event &event)
 {
+      std::type_index typeIndex(typeid(Event));
+      
+      std::vector<std::function<void(const void*)>> handlersVector;
 
+      {
+            std::lock_guard<std::mutex> lock(m_mutex);
+
+            auto it = m_handlers.find(typeIndex);
+            if (it == m_handlers.end())
+            {
+                  return;
+            }
+
+            handlersVector = it->second;
+      }
+
+      for (auto func : handlersVector)
+      {
+            std::function<void()> funcForQueue([eventCopy = event, func]()
+            {
+                  func(&eventCopy);
+            });
+            std::lock_guard<std::mutex> lock(m_mutex);
+            m_tasks.push(funcForQueue);
+      }
+      m_cv.notify_one();
 }
 
 template<typename Event>
@@ -82,9 +107,12 @@ void InfoBus::subscribe(std::function<void (const Event &)> handler)
 {
         std::type_index typeIndex(typeid (Event));
 
-        std::function<void(const void*)> handlerWrappper([handler]()
+        std::function<void(const void*)> handlerWrapper([handler](const void* rawEvent)
         {
-            handler;
+            const Event* castedEvent = static_cast<const Event*>(rawEvent);
+            handler(*castedEvent);
         });
-        m_handlers[typeIndex].push_back(handlerWrappper);
+
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_handlers[typeIndex].push_back(handlerWrapper);
 }
