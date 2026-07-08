@@ -1,6 +1,6 @@
 #include "application.h"
 
-Application::Application() : m_server(new WebServer())
+Application::Application() : m_infoBus(), m_server(new WebServer(&m_infoBus)), window(&m_infoBus), streamController(&m_infoBus)
 {}
 
 Application::~Application()

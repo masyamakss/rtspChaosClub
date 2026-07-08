@@ -1,9 +1,9 @@
 #include "webserver.h"
 
-WebServer::WebServer(int preferredPort)
+WebServer::WebServer(InfoBus* infoBus, int preferredPort)
+    : m_infoBus(infoBus),
+      m_port(preferredPort)
 {
-    m_port = preferredPort;
-
     configureRoutes();
 }
 
@@ -171,6 +171,8 @@ void WebServer::configureRoutes()
         std::string contentToSet = "WebServer got command to start";
 
         response.set_content(contentToSet, "text/plain");
+
+        m_infoBus->post(command);
 
     });
 

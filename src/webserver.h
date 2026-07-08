@@ -4,6 +4,7 @@
 #include "httplib.h"
 #include "embeddedresources.h"
 #include "sourcecommands.h"
+#include "infobus.h"
 
 #include <system_error>
 #include "json/json.h"
@@ -12,7 +13,7 @@
 class WebServer
 {
 public:
-    explicit WebServer(int preferredPort = 47774);
+    explicit WebServer(InfoBus* infoBus, int preferredPort = 47774);
     ~WebServer();
 
     enum StartCode
@@ -45,6 +46,8 @@ private:
     void configureRoutes();
 
     void tryBuildStartSourceCommand(Json::Value postRoot, StartSourceCommand& command, std::string& errorText);
+
+    InfoBus* m_infoBus = nullptr;
 };
 
 #endif // WEBSERVER_H

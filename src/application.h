@@ -4,6 +4,7 @@
 #include "webserver.h"
 #include "webviewwindow.h"
 #include "embeddedresources.h"
+#include "streamcontroller.h"
 #include "gst/gst.h"
 
 
@@ -22,6 +23,10 @@ private:
     WebServer* m_server = nullptr;
 
     WebViewWindow window;
+
+    InfoBus m_infoBus;
+
+    StreamController streamController;
 
 };
 

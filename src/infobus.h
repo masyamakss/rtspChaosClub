@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include <functional>
 #include <typeindex>
@@ -37,20 +37,26 @@ private:
       bool m_stopping = false;
 };
 
-InfoBus::InfoBus()
+inline InfoBus::InfoBus()
 {
       m_workerThread = std::thread(&InfoBus::workerLoop, this);
 }
 
-InfoBus::~InfoBus()
+inline InfoBus::~InfoBus()
 {
-      if (m_workerThread.joinable())
-      {
-            m_workerThread.join();
-      }
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        m_stopping = true;
+    }
+    m_cv.notify_one();
+
+    if (m_workerThread.joinable())
+    {
+        m_workerThread.join();
+    }
 }
 
-void InfoBus::workerLoop()
+inline void InfoBus::workerLoop()
 {
       while (true)
       {
@@ -66,8 +72,10 @@ void InfoBus::workerLoop()
                   return;
             }
 
-
-            
+            std::function<void()> currentTask = std::move(m_tasks.front());
+            m_tasks.pop();
+            lock.unlock();
+            currentTask();
       }
 }
 
