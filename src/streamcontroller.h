@@ -14,8 +14,9 @@ enum class StreamState
     Error
 };
 
-struct streamData
+struct StreamData
 {
+    int streamId;
     StreamState state;
     std::string mountPoint;
     CreateSourceCommand config;
@@ -32,5 +33,6 @@ private:
 
     void startCommandFromWebServerHandler(const CreateSourceCommand&);
 
-    std::unordered_map<std::uint64_t, streamData> m_observedStream;
+    std::uint64_t idCounter = 0;
+    std::unordered_map<std::uint64_t, StreamData> m_observedStream;
 };

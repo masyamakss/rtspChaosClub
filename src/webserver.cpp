@@ -5,6 +5,8 @@ WebServer::WebServer(InfoBus* infoBus, int preferredPort)
       m_port(preferredPort)
 {
     configureRoutes();
+    infoBus->subscribe<SourceCreatedEvent>([this](SourceCreatedEvent createdCard){onCreatedCardHandler(createdCard);});
+    infoBus->subscribe<SourceCreationFailedEvent>([this](SourceCreationFailedEvent failedCard){onFailedToCreateCardHandler(failedCard);});
 }
 
 WebServer::~WebServer()
@@ -172,7 +174,6 @@ void WebServer::configureRoutes()
 
         command.requestId = requestId;
 
-        m_infoBus->post(command);
 
         Json::Value responseJson;
         responseJson["accepted"] = true;
@@ -183,6 +184,40 @@ void WebServer::configureRoutes()
 
         m_infoBus->post(command);
 
+    });
+
+    m_server.Get("/api/events",[this](const httplib::Request&,httplib::Response& response)
+    {
+        response.set_header("Cache-Control", "no-cache");
+        response.set_header("Connection", "keep-alive");
+
+        response.set_chunked_content_provider("text/event-stream",[this](std::size_t,httplib::DataSink& sink)
+        {
+            std::string message;
+
+            {
+                std::unique_lock<std::mutex> lock(m_sseMutex);
+
+                const bool eventReceived = m_sseCv.wait_for(lock, std::chrono::seconds(5),
+                    [this]()
+                    {
+                        return !m_sseEvents.empty();
+                    });
+
+                if (eventReceived)
+                {
+                    message = std::move(m_sseEvents.front());
+                    m_sseEvents.pop_front();
+                }
+                else
+                {
+                    message = ": keep-alive\n\n";
+                }
+            }
+
+            sink.write(message.data(), message.size());
+            return true;
+        });
     });
 
 }
@@ -242,4 +277,63 @@ void WebServer::tryBuildCreateSourceCommand(Json::Value postRoot, CreateSourceCo
     }
 
     errorText = "unknown mode in postRoot";
+}
+
+void WebServer::pushSseEvent(std::string message)
+{
+    {
+        std::lock_guard<std::mutex> lock(m_sseMutex);
+
+        m_sseEvents.push_back(std::move(message));
+    }
+
+    m_sseCv.notify_one();
+}
+
+void WebServer::onCreatedCardHandler(const SourceCreatedEvent& event)
+{
+    Json::Value json;
+
+    json["requestId"] = Json::UInt64(event.requestId);
+
+    json["streamId"] = Json::UInt64(event.streamId);
+
+    json["mountPoint"] = event.mountPoint;
+
+    Json::StreamWriterBuilder writer;
+    writer["indentation"] = "";
+
+    const std::string jsonText = Json::writeString(writer, json);
+
+    std::string message;
+
+    message += "event: source-created\n";
+    message += "data: ";
+    message += jsonText;
+    message += "\n\n";
+
+    pushSseEvent(std::move(message));
+}
+
+void WebServer::onFailedToCreateCardHandler(const SourceCreationFailedEvent& event)
+{
+    Json::Value json;
+
+    json["requestId"] = Json::UInt64(event.requestId);
+
+    json["reason"] = event.reason;
+
+    Json::StreamWriterBuilder writer;
+    writer["indentation"] = "";
+
+    const std::string jsonText = Json::writeString(writer, json);
+
+    std::string message;
+
+    message += "event: source-creation-failed\n";
+    message += "data: ";
+    message += jsonText;
+    message += "\n\n";
+
+    pushSseEvent(std::move(message));
 }

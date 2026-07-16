@@ -14,3 +14,16 @@ struct CreateSourceCommand
 
     std::string fileName;
 };
+
+struct SourceCreatedEvent
+{
+    std::uint64_t requestId;
+    std::uint64_t streamId;
+    std::string mountPoint;
+};
+
+struct SourceCreationFailedEvent
+{
+    std::uint64_t requestId;
+    std::string reason;
+};

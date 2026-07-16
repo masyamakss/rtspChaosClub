@@ -47,9 +47,17 @@ private:
 
     void tryBuildCreateSourceCommand(Json::Value postRoot, CreateSourceCommand& command, std::string& errorText);
 
+    void onCreatedCardHandler(const SourceCreatedEvent& event);
+    void onFailedToCreateCardHandler(const SourceCreationFailedEvent& event);
+
     InfoBus* m_infoBus = nullptr;
 
     std::uint64_t m_nextRequestId = 1;
+
+    std::deque<std::string> m_sseEvents;
+    std::mutex m_sseMutex;
+    std::condition_variable m_sseCv;
+    void pushSseEvent(std::string message);
 };
 
 #endif // WEBSERVER_H

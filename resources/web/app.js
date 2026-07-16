@@ -302,6 +302,44 @@ async function compileSettingsAndSendToStart() {
     }
 }
 
+const sourceEvents = new EventSource("/api/events");
+
+sourceEvents.addEventListener("source-created", event => {
+    const data = JSON.parse(event.data);
+
+    const card = document.querySelector(
+        `[data-request-id="${data.requestId}"]`
+    );
+
+    if (!(card instanceof HTMLElement)) {
+        console.error("Source card was not found");
+        return;
+    }
+
+    const timeoutId = creationTimeouts.get(data.requestId);
+
+    if (timeoutId !== undefined) {
+        clearTimeout(timeoutId);
+        creationTimeouts.delete(data.requestId);
+    }
+
+    card.dataset.streamId = String(data.streamId);
+    setSourceCardState(card, "CREATED");
+
+    const footer = card.querySelector(".source-card-footer");
+
+    if (footer instanceof HTMLElement) {
+        footer.textContent = "RTSP mount point: " + data.mountPoint;
+    }
+});
+
+sourceEvents.addEventListener("source-creation-failed", event => {
+    // найти карточку по requestId
+    // отменить таймер
+    // поставить ERROR
+    // показать reason
+});
+
 addSourceCard.addEventListener("click", openSourceCreationPanel);
 sourceModeToggle.addEventListener("change", updateSourceModeView);
 startButton.addEventListener("click", compileSettingsAndSendToStart);

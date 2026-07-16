@@ -20,11 +20,13 @@ public:
 
 private:
 
+    InfoBus m_infoBus;
+    
     WebServer* m_server = nullptr;
 
     WebViewWindow window;
 
-    InfoBus m_infoBus;
+   
 
     StreamController streamController;
 
