@@ -1,50 +1,237 @@
+:root {
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+    color: #e8edf5;
+    background: #11151c;
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
-    font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    padding: 24px;
     margin: 0;
+    min-height: 100vh;
+    padding: 32px;
+    background:
+        radial-gradient(circle at top left, #202a3a 0, transparent 420px),
+        #11151c;
+}
+
+h1 {
+    margin: 0 0 28px;
+    font-size: 32px;
+    letter-spacing: -0.5px;
 }
 
 .hidden {
-    display: none;
+    display: none !important;
 }
 
-.panel {
-    max-width: 720px;
+/* Контейнер карточек */
+
+.sources-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 320px));
+    gap: 18px;
+    align-items: stretch;
+}
+
+/* Общая форма карточки */
+
+.source-card,
+.add-source-card {
+    width: 100%;
+    min-height: 230px;
+    border: 1px solid #303a49;
+    border-radius: 16px;
+    background: rgba(27, 33, 44, 0.94);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Карточка источника */
+
+.source-card {
+    display: flex;
+    flex-direction: column;
     padding: 20px;
-    border: 1px solid #444;
-    border-radius: 12px;
+    overflow: hidden;
+    transition:
+        transform 150ms ease,
+        border-color 150ms ease;
 }
 
-.panel h2 {
-    margin: 0 0 18px 0;
+.source-card:hover {
+    transform: translateY(-2px);
+    border-color: #46546a;
 }
 
-.panel h3 {
-    margin: 0 0 14px 0;
-}
-
-.source-toggle-row {
+.source-card-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 12px;
+    margin-bottom: 20px;
 }
 
-.settings-block {
-    margin-top: 20px;
+.source-card-title {
+    margin: 0;
+    font-size: 19px;
+    font-weight: 650;
 }
 
-.settings-block label {
-    display: flex;
+.source-state {
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
-    margin-top: 10px;   
+    gap: 7px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    background: #33301e;
+    color: #ffd76a;
 }
 
-.settings-block input[type="range"] {
-    width: 180px;
+.source-state::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
 }
 
-#startButton {
-    margin-top: 20px;
-    padding: 10px 16px;
+/* Параметры */
+
+.source-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+}
+
+.source-card-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: center;
+}
+
+.source-card-label {
+    color: #8f9bad;
+    font-size: 14px;
+}
+
+.source-card-value {
+    color: #edf2f8;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+.source-card-footer {
+    margin-top: auto;
+    padding-top: 20px;
+    color: #7f8a9c;
+    font-size: 12px;
+    line-height: 1.4;
+}
+
+/* Статусы */
+
+.source-card-creating {
+    border-color: #625830;
+}
+
+.source-card-creating .source-state::before {
+    animation: state-pulse 800ms ease-in-out infinite alternate;
+}
+
+.source-card-created {
+    border-color: #315f4c;
+}
+
+.source-card-created .source-state {
+    background: #1f4336;
+    color: #71e2ae;
+}
+
+.source-card-running {
+    border-color: #315981;
+}
+
+.source-card-running .source-state {
+    background: #203c59;
+    color: #77bfff;
+}
+
+.source-card-stopped .source-state {
+    background: #303744;
+    color: #b2bdcc;
+}
+
+.source-card-error {
+    border-color: #7c3d45;
+}
+
+.source-card-error .source-state {
+    background: #552a30;
+    color: #ff929d;
+}
+
+/* Карточка добавления */
+
+.add-source-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px;
+    color: #9ba7b8;
+    cursor: pointer;
+    border-style: dashed;
+    font: inherit;
+    transition:
+        transform 150ms ease,
+        color 150ms ease,
+        background 150ms ease,
+        border-color 150ms ease;
+}
+
+.add-source-card:hover {
+    transform: translateY(-2px);
+    color: #ffffff;
+    border-color: #658dca;
+    background: rgba(44, 61, 85, 0.88);
+}
+
+.add-source-icon {
+    display: block;
+    font-size: 46px;
+    font-weight: 300;
+    line-height: 1;
+}
+
+/* Нижний общий статус */
+
+#statusText {
+    display: inline-block;
+    margin-top: 22px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: rgba(26, 32, 42, 0.8);
+    color: #8793a5;
+    font-size: 13px;
+}
+
+@keyframes state-pulse {
+    from {
+        opacity: 0.35;
+        transform: scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }

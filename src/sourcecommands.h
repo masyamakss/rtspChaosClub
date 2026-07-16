@@ -2,8 +2,10 @@
 
 #include <string>
 
-struct StartSourceCommand
+struct CreateSourceCommand
 {
+    std::uint64_t requestId;
+
     std::string mode;
     std::string resolution;
 

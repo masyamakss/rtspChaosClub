@@ -45,9 +45,11 @@ private:
 
     void configureRoutes();
 
-    void tryBuildStartSourceCommand(Json::Value postRoot, StartSourceCommand& command, std::string& errorText);
+    void tryBuildCreateSourceCommand(Json::Value postRoot, CreateSourceCommand& command, std::string& errorText);
 
     InfoBus* m_infoBus = nullptr;
+
+    std::uint64_t m_nextRequestId = 1;
 };
 
 #endif // WEBSERVER_H

@@ -157,9 +157,9 @@ void WebServer::configureRoutes()
             return;
         }
 
-        StartSourceCommand command;
+        CreateSourceCommand command;
         std::string errorOfFillingCommand = "";
-        tryBuildStartSourceCommand(postRoot, command, errorOfFillingCommand);
+        tryBuildCreateSourceCommand(postRoot, command, errorOfFillingCommand);
         if (errorOfFillingCommand != "")
         {
             std::cerr << "JSON is broken, cant build command\n";
@@ -168,9 +168,18 @@ void WebServer::configureRoutes()
             return;
         }
 
-        std::string contentToSet = "WebServer got command to start";
+        const std::uint64_t requestId = m_nextRequestId++;
 
-        response.set_content(contentToSet, "text/plain");
+        command.requestId = requestId;
+
+        m_infoBus->post(command);
+
+        Json::Value responseJson;
+        responseJson["accepted"] = true;
+        responseJson["requestId"] = Json::UInt64(requestId);
+
+        Json::StreamWriterBuilder writer;
+        response.set_content(Json::writeString(writer, responseJson), "application/json");
 
         m_infoBus->post(command);
 
@@ -178,7 +187,7 @@ void WebServer::configureRoutes()
 
 }
 
-void WebServer::tryBuildStartSourceCommand(Json::Value postRoot, StartSourceCommand& command, std::string& errorText)
+void WebServer::tryBuildCreateSourceCommand(Json::Value postRoot, CreateSourceCommand& command, std::string& errorText)
 {
     errorText.clear();
 

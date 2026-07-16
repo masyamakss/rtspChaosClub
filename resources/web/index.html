@@ -10,17 +10,23 @@
 <body>
     <h1>RTSP Chaos Club</h1>
 
-    <section class="panel">
-        
+    <div id="sourcesContainer" class="sources-container">
+        <button id="addSourceCard" class="add-source-card" type="button">
+            <span class="add-source-icon">+</span>
+            <span>Добавить источник</span>
+        </button>
+    </div>
+
+    <section id="sourceCreationPanel" class="panel hidden">
         <h2>Source</h2>
 
         <div class="source-toggle-row">
             <span>Generated video</span>
 
-        <label class="switch">
-            <input id="sourceModeToggle" type="checkbox">
-            <span class="slider"></span>
-        </label>
+            <label class="switch">
+                <input id="sourceModeToggle" type="checkbox">
+                <span class="slider"></span>
+            </label>
 
             <span>File video</span>
         </div>
@@ -56,12 +62,10 @@
             </label>
         </div>
 
+        <button id="startButton" type="button">Создать источник</button>
     </section>
 
-    <button id="startButton">Запустить источник</button>
     <p id="statusText">Status: idle</p>
-
-
 
     <script src="/app.js"></script>
 </body>
