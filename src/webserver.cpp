@@ -203,11 +203,12 @@ void WebServer::configureRoutes()
                     {
                         return !m_sseEvents.empty();
                     });
-
+                
                 if (eventReceived)
                 {
                     message = std::move(m_sseEvents.front());
                     m_sseEvents.pop_front();
+                    std::cerr << "CV woke up succesfully\n";
                 }
                 else
                 {
@@ -215,8 +216,13 @@ void WebServer::configureRoutes()
                 }
             }
 
-            sink.write(message.data(), message.size());
-            return true;
+            const bool writeResult = sink.write(message.data(), message.size());
+
+            std::cerr << "SSE writeResult = " << writeResult
+                << ", bytes = " << message.size() << "\nMESSAGE:\n"
+                << message << '\n';
+
+            return writeResult;
         });
     });
 
@@ -292,6 +298,8 @@ void WebServer::pushSseEvent(std::string message)
 
 void WebServer::onCreatedCardHandler(const SourceCreatedEvent& event)
 {
+
+    std::cerr << "InfoBus sent info of created source\n";
     Json::Value json;
 
     json["requestId"] = Json::UInt64(event.requestId);

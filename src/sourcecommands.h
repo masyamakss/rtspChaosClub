@@ -27,3 +27,8 @@ struct SourceCreationFailedEvent
     std::uint64_t requestId;
     std::string reason;
 };
+
+struct DeleteSourceCommand
+{
+    std::uint64_t streamId;
+};

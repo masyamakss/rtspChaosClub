@@ -37,6 +37,7 @@ const defaultStartButtonText = startButton.textContent;
  * пока StreamController не подтвердит создание.
  */
 const creationTimeouts = new Map();
+let nextRequestId = 1;
 
 function updateSourceModeView() {
     const fileModeEnabled = sourceModeToggle.checked;
@@ -191,11 +192,38 @@ function createSourceCard(requestId, settings) {
         );
     }
 
+    const actions = document.createElement("div");
+    actions.className = "source-card-actions";
+
+    const runSourceButton = document.createElement("button");
+    runSourceButton.className = "source-start-button";
+    runSourceButton.textContent = "Запустить";
+    runSourceButton.disabled = true;
+
+    const deleteSourceButton = document.createElement("button");
+    deleteSourceButton.className = "source-delete-button";
+    deleteSourceButton.textContent = "Удалить";
+    deleteSourceButton.disabled = true;
+    deleteSourceButton.addEventListener("click", ()=>
+        {
+            const streamId = Number(card.dataset.streamId);
+
+            if (!Number.isInteger(streamId)) 
+            {
+                console.error("Card has no valid streamId");
+                return;
+            }
+
+            console.log("Delete source:", streamId);
+        });
+
+    actions.append(runSourceButton, deleteSourceButton);
+
     const footer = document.createElement("div");
     footer.className = "source-card-footer";
     footer.textContent = "Ожидание ответа от StreamController";
 
-    card.append(header, body, footer);
+    card.append(header, body, footer, actions);
 
     sourcesContainer.insertBefore(card, addSourceCard);
 
@@ -230,11 +258,46 @@ async function compileSettingsAndSendToStart() {
     }
 
     const settings = result.settings;
+    const requestId = nextRequestId++;
 
+    /*
+     * Карточка появляется до отправки команды.
+     * Поэтому SSE уже сможет найти её по requestId,
+     * даже если StreamController ответит очень быстро.
+     */
+    const card = createSourceCard(requestId, settings);
+
+    closeSourceCreationPanel();
     setCreationLoading(true);
 
     statusText.textContent =
-        "Status: sending " + JSON.stringify(settings);
+        "Status: sending request #" + requestId;
+
+    const markRequestFailed = message => {
+        /*
+         * SSE мог уже успешно перевести карточку в CREATED.
+         * В таком случае поздняя HTTP-ошибка не должна
+         * перезаписать её состояние.
+         */
+        if (card.dataset.state !== "CREATING") {
+            return;
+        }
+
+        const timeoutId = creationTimeouts.get(requestId);
+
+        if (timeoutId !== undefined) {
+            clearTimeout(timeoutId);
+            creationTimeouts.delete(requestId);
+        }
+
+        setSourceCardState(card, "ERROR");
+
+        const footer = card.querySelector(".source-card-footer");
+
+        if (footer instanceof HTMLElement) {
+            footer.textContent = message;
+        }
+    };
 
     try {
         const response = await fetch("/api/test", {
@@ -242,13 +305,21 @@ async function compileSettingsAndSendToStart() {
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify(settings)
+            body: JSON.stringify({
+                requestId: requestId,
+                ...settings
+            })
         });
 
         const responseText = await response.text();
 
         if (!response.ok) {
-            setCreationLoading(false);
+            markRequestFailed(
+                "Server error " +
+                response.status +
+                ": " +
+                responseText
+            );
 
             statusText.textContent =
                 "Status: server error " +
@@ -264,41 +335,69 @@ async function compileSettingsAndSendToStart() {
         try {
             responseData = JSON.parse(responseText);
         } catch (error) {
-            setCreationLoading(false);
+            markRequestFailed("Server returned invalid JSON");
 
             statusText.textContent =
                 "Status: server returned invalid JSON";
 
-            console.error("Invalid server response:", responseText);
+            console.error(
+                "Invalid server response:",
+                responseText
+            );
+
             return;
         }
 
-        if (responseData.accepted !== true || !Number.isInteger(responseData.requestId)) 
-        {
-            setCreationLoading(false);
+        if (responseData.accepted !== true) {
+            markRequestFailed("Server rejected the request");
 
             statusText.textContent =
                 "Status: incorrect response from server";
 
-            console.error("Incorrect response:", responseData);
+            console.error(
+                "Incorrect response:",
+                responseData
+            );
+
             return;
         }
 
-        createSourceCard(responseData.requestId, settings);
+        const runSourceButton =
+        card.querySelector(".source-start-button");
 
-        setCreationLoading(false);
-        closeSourceCreationPanel();
+        const deleteSourceButton =
+            card.querySelector(".source-delete-button");
+
+        if (runSourceButton instanceof HTMLButtonElement) {
+            runSourceButton.disabled = false;
+        }
+
+        if (deleteSourceButton instanceof HTMLButtonElement) {
+            deleteSourceButton.disabled = false;
+        }
+
+        /*
+         * Карточка здесь уже существует.
+         * Она могла даже успеть перейти в CREATED через SSE.
+         */
+        if (card.dataset.state === "CREATING") {
+            statusText.textContent =
+                "Status: request #" +
+                requestId +
+                " accepted";
+        }
+    } catch (error) {
+        markRequestFailed("Failed to send creation request");
 
         statusText.textContent =
-            "Status: request #" +
-            responseData.requestId +
-            " accepted";
-    } catch (error) {
+            "Status: request failed";
+
+        console.error(
+            "Failed to create source:",
+            error
+        );
+    } finally {
         setCreationLoading(false);
-
-        statusText.textContent = "Status: request failed";
-
-        console.error("Failed to create source:", error);
     }
 }
 
@@ -307,6 +406,7 @@ const sourceEvents = new EventSource("/api/events");
 sourceEvents.addEventListener("source-created", event => {
     const data = JSON.parse(event.data);
 
+    statusText.textContent = "Status: SOURCE-CREATEd";
     const card = document.querySelector(
         `[data-request-id="${data.requestId}"]`
     );
