@@ -1,6 +1,6 @@
 #include "webviewwindow.h"
 
-WebViewWindow::WebViewWindow(InfoBus* infoBus) : m_webView(false, nullptr)
+WebViewWindow::WebViewWindow(InfoBus* infoBus) : m_webView(true, nullptr)
 {
     m_infoBus = infoBus;
     m_webView.set_title("RTSP Chaos Club");

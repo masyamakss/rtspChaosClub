@@ -25,7 +25,8 @@ if (
     !(backgroundSpeedInput instanceof HTMLInputElement) ||
     !(resolutionSelect instanceof HTMLSelectElement) ||
     !(videoFileInput instanceof HTMLInputElement)
-) {
+) 
+{
     document.body.textContent = "JS error: page structure is broken";
     throw new Error("Page structure is broken");
 }
@@ -62,15 +63,19 @@ function setCreationLoading(isLoading) {
     startButton.disabled = isLoading;
     startButton.classList.toggle("is-loading", isLoading);
 
-    if (isLoading) {
+    if (isLoading) 
+    {
         startButton.textContent = "Создание...";
-    } else {
+    } 
+    else 
+    {
         startButton.textContent = defaultStartButtonText;
     }
 }
 
 function collectStartSettings() {
-    if (sourceModeToggle.checked) {
+    if (sourceModeToggle.checked) 
+    {
         const selectedFile = videoFileInput.files[0];
 
         if (!selectedFile) {
@@ -100,7 +105,8 @@ function collectStartSettings() {
     };
 }
 
-function createSourceInfoRow(labelText, valueText) {
+function createSourceInfoRow(labelText, valueText) 
+{
     const row = document.createElement("div");
     row.className = "source-card-row";
 
@@ -117,32 +123,28 @@ function createSourceInfoRow(labelText, valueText) {
     return row;
 }
 
-function setSourceCardState(card, state) {
+function setSourceCardState(card, state) 
+{
     card.dataset.state = state;
 
     const stateElement = card.querySelector(".source-state");
 
-    if (!(stateElement instanceof HTMLElement)) {
+    if (!(stateElement instanceof HTMLElement)) 
+    {
         console.error("Source card state element was not found");
         return;
     }
 
     stateElement.textContent = state;
 
-    card.classList.remove(
-        "source-card-creating",
-        "source-card-created",
-        "source-card-error",
-        "source-card-running",
-        "source-card-stopped"
-    );
+    card.classList.remove("source-card-creating", "source-card-created",
+        "source-card-error", "source-card-running", "source-card-stopped");
 
-    card.classList.add(
-        "source-card-" + state.toLowerCase()
-    );
+    card.classList.add("source-card-" + state.toLowerCase());
 }
 
-function createSourceCard(requestId, settings) {
+function createSourceCard(requestId, settings) 
+{
     const card = document.createElement("article");
 
     card.className = "source-card source-card-creating";
@@ -165,28 +167,17 @@ function createSourceCard(requestId, settings) {
     const body = document.createElement("div");
     body.className = "source-card-body";
 
-    body.append(
-        createSourceInfoRow(
-            "Тип",
-            settings.mode === "synthMode"
-                ? "Generated video"
-                : "File video"
-        )
-    );
+    body.append(createSourceInfoRow("Тип", settings.mode === "synthMode" ? "Generated video" : "File video"));
 
-    if (settings.mode === "synthMode") {
-        body.append(
-            createSourceInfoRow("Разрешение", settings.resolution),
-            createSourceInfoRow(
-                "Скорость куба",
-                String(settings.cubeSpeed)
-            ),
-            createSourceInfoRow(
-                "Скорость фона",
-                String(settings.backgroundSpeed)
-            )
+    if (settings.mode === "synthMode") 
+    {
+        body.append(createSourceInfoRow("Разрешение", settings.resolution),
+            createSourceInfoRow("Скорость куба", String(settings.cubeSpeed)),
+            createSourceInfoRow("Скорость фона", String(settings.backgroundSpeed))
         );
-    } else {
+    } 
+    else 
+    {
         body.append(
             createSourceInfoRow("Файл", settings.fileName)
         );
@@ -200,28 +191,55 @@ function createSourceCard(requestId, settings) {
     runSourceButton.textContent = "Запустить";
     runSourceButton.disabled = true;
 
+    const footer = document.createElement("div");
+    footer.className = "source-card-footer";
+    footer.textContent = "Ожидание ответа от StreamController";
+
     const deleteSourceButton = document.createElement("button");
     deleteSourceButton.className = "source-delete-button";
     deleteSourceButton.textContent = "Удалить";
     deleteSourceButton.disabled = true;
-    deleteSourceButton.addEventListener("click", ()=>
+    deleteSourceButton.addEventListener("click", async ()=>
+    {
+        const streamId = Number(card.dataset.streamId);
+
+        if (!Number.isInteger(streamId)) 
         {
-            const streamId = Number(card.dataset.streamId);
+            console.error("Card has no valid streamId");
+            return;
+        }
 
-            if (!Number.isInteger(streamId)) 
+        deleteSourceButton.disabled = true;
+        runSourceButton.disabled = true;
+        
+        footer.textContent = "Удаление элемента";
+        
+
+        try
+        {
+            const response = await fetch("/api/source/delete", {
+                method: "POST",
+                headers:{"Content-Type": "application/json"},
+                body: JSON.stringify({streamId})
+            });    
+            
+            if (!response.ok)
             {
-                console.error("Card has no valid streamId");
-                return;
+                throw new Error("Delete request failed");   
             }
+        }
+        catch (error)
+        {
+            deleteSourceButton.disabled = false;
+            runSourceButton.disabled = false;
 
-            console.log("Delete source:", streamId);
-        });
+            footer.textContent = "Не удалось отправить команду удаления";
+            
+            console.log(error);
+        }
+    });
 
     actions.append(runSourceButton, deleteSourceButton);
-
-    const footer = document.createElement("div");
-    footer.className = "source-card-footer";
-    footer.textContent = "Ожидание ответа от StreamController";
 
     card.append(header, body, footer, actions);
 
@@ -233,13 +251,9 @@ function createSourceCard(requestId, settings) {
         }
 
         setSourceCardState(card, "ERROR");
-        footer.textContent =
-            "StreamController не подтвердил создание за 15 секунд";
+        footer.textContent = "StreamController не подтвердил создание за 15 секунд";
 
-        statusText.textContent =
-            "Status: source request #" +
-            requestId +
-            " creation timed out";
+        statusText.textContent = "Status: source request #" + requestId + " creation timed out";
 
         creationTimeouts.delete(requestId);
     }, 15000);
@@ -249,10 +263,12 @@ function createSourceCard(requestId, settings) {
     return card;
 }
 
-async function compileSettingsAndSendToStart() {
+async function compileSettingsAndSendToStart() 
+{
     const result = collectStartSettings();
 
-    if (!result.ok) {
+    if (!result.ok) 
+    {
         statusText.textContent = "Status: " + result.error;
         return;
     }
@@ -270,8 +286,7 @@ async function compileSettingsAndSendToStart() {
     closeSourceCreationPanel();
     setCreationLoading(true);
 
-    statusText.textContent =
-        "Status: sending request #" + requestId;
+    statusText.textContent = "Status: sending request #" + requestId;
 
     const markRequestFailed = message => {
         /*
@@ -279,27 +294,31 @@ async function compileSettingsAndSendToStart() {
          * В таком случае поздняя HTTP-ошибка не должна
          * перезаписать её состояние.
          */
-        if (card.dataset.state !== "CREATING") {
+        if (card.dataset.state !== "CREATING") 
+        {
             return;
         }
 
         const timeoutId = creationTimeouts.get(requestId);
 
-        if (timeoutId !== undefined) {
+        if (timeoutId !== undefined) 
+        {
             clearTimeout(timeoutId);
             creationTimeouts.delete(requestId);
         }
 
         setSourceCardState(card, "ERROR");
 
-        const footer = card.querySelector(".source-card-footer");
+        const footer = card.querySelector("source-card-footer");
 
-        if (footer instanceof HTMLElement) {
+        if (footer instanceof HTMLElement) 
+        {
             footer.textContent = message;
         }
     };
 
-    try {
+    try 
+    {
         const response = await fetch("/api/test", {
             method: "POST",
             headers: {
@@ -313,66 +332,54 @@ async function compileSettingsAndSendToStart() {
 
         const responseText = await response.text();
 
-        if (!response.ok) {
-            markRequestFailed(
-                "Server error " +
-                response.status +
-                ": " +
-                responseText
-            );
+        if (!response.ok) 
+        {
+            markRequestFailed("Server error " + response.status + ": " + responseText);
 
-            statusText.textContent =
-                "Status: server error " +
-                response.status +
-                ": " +
-                responseText;
+            statusText.textContent = "Status: server error " + response.status + ": " + responseText;
 
             return;
         }
 
         let responseData;
 
-        try {
+        try 
+        {
             responseData = JSON.parse(responseText);
-        } catch (error) {
+        } 
+        catch (error) 
+        {
             markRequestFailed("Server returned invalid JSON");
 
-            statusText.textContent =
-                "Status: server returned invalid JSON";
+            statusText.textContent = "Status: server returned invalid JSON";
 
-            console.error(
-                "Invalid server response:",
-                responseText
-            );
+            console.error("Invalid server response:", responseText);
 
             return;
         }
 
-        if (responseData.accepted !== true) {
+        if (responseData.accepted !== true) 
+        {
             markRequestFailed("Server rejected the request");
 
-            statusText.textContent =
-                "Status: incorrect response from server";
+            statusText.textContent = "Status: incorrect response from server";
 
-            console.error(
-                "Incorrect response:",
-                responseData
-            );
+            console.error("Incorrect response:", responseData);
 
             return;
         }
 
-        const runSourceButton =
-        card.querySelector(".source-start-button");
+        const runSourceButton = card.querySelector(".source-start-button");
 
-        const deleteSourceButton =
-            card.querySelector(".source-delete-button");
+        const deleteSourceButton = card.querySelector(".source-delete-button");
 
-        if (runSourceButton instanceof HTMLButtonElement) {
+        if (runSourceButton instanceof HTMLButtonElement) 
+        {
             runSourceButton.disabled = false;
         }
 
-        if (deleteSourceButton instanceof HTMLButtonElement) {
+        if (deleteSourceButton instanceof HTMLButtonElement) 
+        {
             deleteSourceButton.disabled = false;
         }
 
@@ -380,23 +387,21 @@ async function compileSettingsAndSendToStart() {
          * Карточка здесь уже существует.
          * Она могла даже успеть перейти в CREATED через SSE.
          */
-        if (card.dataset.state === "CREATING") {
-            statusText.textContent =
-                "Status: request #" +
-                requestId +
-                " accepted";
+        if (card.dataset.state === "CREATING") 
+        {
+            statusText.textContent = "Status: request #" + requestId + " accepted";
         }
-    } catch (error) {
+    } 
+    catch (error) 
+    {
         markRequestFailed("Failed to send creation request");
 
-        statusText.textContent =
-            "Status: request failed";
+        statusText.textContent = "Status: request failed";
 
-        console.error(
-            "Failed to create source:",
-            error
-        );
-    } finally {
+        console.error("Failed to create source:", error);
+    } 
+    finally 
+    {
         setCreationLoading(false);
     }
 }
@@ -407,18 +412,18 @@ sourceEvents.addEventListener("source-created", event => {
     const data = JSON.parse(event.data);
 
     statusText.textContent = "Status: SOURCE-CREATEd";
-    const card = document.querySelector(
-        `[data-request-id="${data.requestId}"]`
-    );
+    const card = document.querySelector(`[data-request-id="${data.requestId}"]`);
 
-    if (!(card instanceof HTMLElement)) {
+    if (!(card instanceof HTMLElement)) 
+    {
         console.error("Source card was not found");
         return;
     }
 
     const timeoutId = creationTimeouts.get(data.requestId);
 
-    if (timeoutId !== undefined) {
+    if (timeoutId !== undefined) 
+    {
         clearTimeout(timeoutId);
         creationTimeouts.delete(data.requestId);
     }
@@ -426,11 +431,9 @@ sourceEvents.addEventListener("source-created", event => {
     card.dataset.streamId = String(data.streamId);
     setSourceCardState(card, "CREATED");
 
-    const footer = card.querySelector(".source-card-footer");
+    const footer = card.querySelector("source-card-footer");
 
-    if (footer instanceof HTMLElement) {
-        footer.textContent = "RTSP mount point: " + data.mountPoint;
-    }
+    if (footer instanceof HTMLElement) {footer.textContent = "RTSP mount point: " + data.mountPoint;}
 });
 
 sourceEvents.addEventListener("source-creation-failed", event => {

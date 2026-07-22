@@ -32,6 +32,7 @@ private:
     InfoBus* m_infobus = nullptr;
 
     void startCommandFromWebServerHandler(const CreateSourceCommand&);
+    void deleteCommandFromWebServerHandler(const DeleteSourceCommand&);
 
     std::uint64_t idCounter = 0;
     std::unordered_map<std::uint64_t, StreamData> m_observedStream;

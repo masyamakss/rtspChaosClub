@@ -7,6 +7,7 @@ WebServer::WebServer(InfoBus* infoBus, int preferredPort)
     configureRoutes();
     infoBus->subscribe<SourceCreatedEvent>([this](SourceCreatedEvent createdCard){onCreatedCardHandler(createdCard);});
     infoBus->subscribe<SourceCreationFailedEvent>([this](SourceCreationFailedEvent failedCard){onFailedToCreateCardHandler(failedCard);});
+    infoBus->subscribe<DeletedSourceEvent>([this](DeletedSourceEvent deletedCard){onDeletedCardHandler(deletedCard);});
 }
 
 WebServer::~WebServer()
@@ -209,6 +210,7 @@ void WebServer::configureRoutes()
                     message = std::move(m_sseEvents.front());
                     m_sseEvents.pop_front();
                     std::cerr << "CV woke up succesfully\n";
+                    std::cerr << "bytes = " << message.size() << "\nMESSAGE:\n" << message << '\n';
                 }
                 else
                 {
@@ -218,14 +220,44 @@ void WebServer::configureRoutes()
 
             const bool writeResult = sink.write(message.data(), message.size());
 
-            std::cerr << "SSE writeResult = " << writeResult
-                << ", bytes = " << message.size() << "\nMESSAGE:\n"
-                << message << '\n';
-
+            
             return writeResult;
         });
     });
 
+    m_server.Post("/api/source/delete",[this](const httplib::Request& request, httplib::Response& response)
+    {
+        auto jsonBody = request.body;
+        std::cerr << "POST body: " << request.body << '\n';
+
+        Json::Value postRoot;
+        Json::Reader postReader;
+        if (!postReader.parse(jsonBody, postRoot))
+        {
+            std::cerr << "JSON in POST body is broken \n";
+            response.status = 400;
+            response.set_content("JSON in POST body is broken", "text/plain");
+            return;
+        } 
+
+        if (!postRoot["streamId"].isUInt64())
+        {
+            response.status = 400;
+            response.set_content("Invalid streamId", "text/plain");
+            return;
+        }
+
+        const std::uint64_t streamId = postRoot["streamId"].asUInt64();
+
+        response.status = 200;
+        response.set_content("Valid streamId", "text/plain");
+
+        DeleteSourceCommand deleteCard;
+        deleteCard.streamId = streamId;
+        m_infoBus->post(deleteCard);
+
+        std::cerr << "streamId: " << streamId << '\n';
+    });
 }
 
 void WebServer::tryBuildCreateSourceCommand(Json::Value postRoot, CreateSourceCommand& command, std::string& errorText)
@@ -316,6 +348,29 @@ void WebServer::onCreatedCardHandler(const SourceCreatedEvent& event)
     std::string message;
 
     message += "event: source-created\n";
+    message += "data: ";
+    message += jsonText;
+    message += "\n\n";
+
+    pushSseEvent(std::move(message));
+}
+
+void WebServer::onDeletedCardHandler(const DeletedSourceEvent& event)
+{
+
+    std::cerr << "InfoBus sent info of deleted source\n";
+    Json::Value json;
+
+    json["streamId"] = Json::UInt64(event.streamId);
+
+    Json::StreamWriterBuilder writer;
+    writer["indentation"] = "";
+
+    const std::string jsonText = Json::writeString(writer, json);
+
+    std::string message;
+
+    message += "event: source-deleted\n";
     message += "data: ";
     message += jsonText;
     message += "\n\n";

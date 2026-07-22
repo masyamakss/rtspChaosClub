@@ -50,6 +50,8 @@ private:
     void onCreatedCardHandler(const SourceCreatedEvent& event);
     void onFailedToCreateCardHandler(const SourceCreationFailedEvent& event);
 
+    void onDeletedCardHandler(const DeletedSourceEvent& event);
+
     InfoBus* m_infoBus = nullptr;
 
     std::uint64_t m_nextRequestId = 1;

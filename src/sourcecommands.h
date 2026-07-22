@@ -32,3 +32,8 @@ struct DeleteSourceCommand
 {
     std::uint64_t streamId;
 };
+
+struct DeletedSourceEvent
+{
+    std::uint64_t streamId;
+};
