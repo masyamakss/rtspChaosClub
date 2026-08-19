@@ -39,7 +39,9 @@ add_executable(rtspChaosClub
                 src/streamcontroller.h
                 src/streamcontroller.cpp
                 src/sourcecommands.h
-                src/infobus.h)
+                src/infobus.h
+                src/rtspserver.h
+                src/rtspserver.cpp)
 
 target_link_libraries(rtspChaosClub PRIVATE
     PkgConfig::GSTREAMER
