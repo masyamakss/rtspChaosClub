@@ -38,6 +38,7 @@ const defaultStartButtonText = startButton.textContent;
  * пока StreamController не подтвердит создание.
  */
 const creationTimeouts = new Map();
+const startTimeouts = new Map();
 let nextRequestId = 1;
 
 function updateSourceModeView() {
@@ -138,7 +139,7 @@ function setSourceCardState(card, state)
     stateElement.textContent = state;
 
     card.classList.remove("source-card-creating", "source-card-created",
-        "source-card-error", "source-card-running", "source-card-stopped");
+        "source-card-error", "source-card-running", "source-card-stopped", "source-card-starting");
 
     card.classList.add("source-card-" + state.toLowerCase());
 }
@@ -167,11 +168,19 @@ function createSourceCard(requestId, settings)
     const body = document.createElement("div");
     body.className = "source-card-body";
 
-    body.append(createSourceInfoRow("Тип", settings.mode === "synthMode" ? "Generated video" : "File video"));
+    body.append(
+        createSourceInfoRow(
+            "Тип",
+            settings.mode === "synthMode"
+                ? "Generated video"
+                : "File video"
+        )
+    );
 
     if (settings.mode === "synthMode") 
     {
-        body.append(createSourceInfoRow("Разрешение", settings.resolution),
+        body.append(
+            createSourceInfoRow("Разрешение", settings.resolution),
             createSourceInfoRow("Скорость куба", String(settings.cubeSpeed)),
             createSourceInfoRow("Скорость фона", String(settings.backgroundSpeed))
         );
@@ -183,23 +192,103 @@ function createSourceCard(requestId, settings)
         );
     }
 
+    const footer = document.createElement("div");
+    footer.className = "source-card-footer";
+    footer.textContent = "Ожидание ответа от StreamController";
+
     const actions = document.createElement("div");
     actions.className = "source-card-actions";
+
 
     const runSourceButton = document.createElement("button");
     runSourceButton.className = "source-start-button";
     runSourceButton.textContent = "Запустить";
     runSourceButton.disabled = true;
 
-    const footer = document.createElement("div");
-    footer.className = "source-card-footer";
-    footer.textContent = "Ожидание ответа от StreamController";
+    runSourceButton.addEventListener("click", async () => 
+    {
+        const streamId = Number(card.dataset.streamId);
+
+        if (!Number.isInteger(streamId))
+        {
+            console.error("Card has no valid streamId");
+            return;
+        }
+
+        runSourceButton.disabled = true;
+        deleteSourceButton.disabled = true;
+
+        setSourceCardState(card, "STARTING");
+        footer.textContent = "Запуск потока";
+
+        const timeoutId = window.setTimeout(() => 
+        {
+            if (card.dataset.state !== "STARTING") 
+            {
+                return;
+            }
+
+            footer.textContent =
+                "StreamController не подтвердил запуск за 15 секунд";
+
+            statusText.textContent =
+                "Status: source #" + streamId + " start timed out";
+
+            deleteSourceButton.disabled = false;
+            runSourceButton.disabled = false;
+
+            startTimeouts.delete(streamId);
+        }, 15000);
+
+        startTimeouts.set(streamId, timeoutId);
+
+        try
+        {
+            const response = await fetch(
+                "/api/source/start",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ streamId })
+                }
+            );
+
+            if (!response.ok)
+            {
+                throw new Error("Start request failed");
+            }
+        }
+        catch (error)
+        {
+            const timeoutId = startTimeouts.get(streamId);
+
+            if (timeoutId !== undefined)
+            {
+                clearTimeout(timeoutId);
+                startTimeouts.delete(streamId);
+            }
+
+            deleteSourceButton.disabled = false;
+            runSourceButton.disabled = false;
+
+            setSourceCardState(card, "CREATED");
+
+            footer.textContent =
+                "Не удалось отправить команду запуска";
+
+            console.error(error);
+        }
+    });
+
 
     const deleteSourceButton = document.createElement("button");
     deleteSourceButton.className = "source-delete-button";
     deleteSourceButton.textContent = "Удалить";
     deleteSourceButton.disabled = true;
-    deleteSourceButton.addEventListener("click", async ()=>
+
+    deleteSourceButton.addEventListener("click", async () =>
     {
         const streamId = Number(card.dataset.streamId);
 
@@ -211,21 +300,25 @@ function createSourceCard(requestId, settings)
 
         deleteSourceButton.disabled = true;
         runSourceButton.disabled = true;
-        
+
         footer.textContent = "Удаление элемента";
-        
 
         try
         {
-            const response = await fetch("/api/source/delete", {
-                method: "POST",
-                headers:{"Content-Type": "application/json"},
-                body: JSON.stringify({streamId})
-            });    
-            
+            const response = await fetch(
+                "/api/source/delete",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ streamId })
+                }
+            );
+
             if (!response.ok)
             {
-                throw new Error("Delete request failed");   
+                throw new Error("Delete request failed");
             }
         }
         catch (error)
@@ -233,32 +326,56 @@ function createSourceCard(requestId, settings)
             deleteSourceButton.disabled = false;
             runSourceButton.disabled = false;
 
-            footer.textContent = "Не удалось отправить команду удаления";
-            
-            console.log(error);
+            footer.textContent =
+                "Не удалось отправить команду удаления";
+
+            console.error(error);
         }
     });
 
-    actions.append(runSourceButton, deleteSourceButton);
 
-    card.append(header, body, footer, actions);
+    actions.append(
+        runSourceButton,
+        deleteSourceButton
+    );
 
-    sourcesContainer.insertBefore(card, addSourceCard);
+    card.append(
+        header,
+        body,
+        footer,
+        actions
+    );
 
-    const timeoutId = window.setTimeout(() => {
-        if (card.dataset.state !== "CREATING") {
+    sourcesContainer.insertBefore(
+        card,
+        addSourceCard
+    );
+
+
+    const timeoutId = window.setTimeout(() => 
+    {
+        if (card.dataset.state !== "CREATING") 
+        {
             return;
         }
 
         setSourceCardState(card, "ERROR");
-        footer.textContent = "StreamController не подтвердил создание за 15 секунд";
 
-        statusText.textContent = "Status: source request #" + requestId + " creation timed out";
+        footer.textContent =
+            "StreamController не подтвердил создание за 15 секунд";
+
+        statusText.textContent =
+            "Status: source request #" +
+            requestId +
+            " creation timed out";
 
         creationTimeouts.delete(requestId);
     }, 15000);
 
-    creationTimeouts.set(requestId, timeoutId);
+    creationTimeouts.set(
+        requestId,
+        timeoutId
+    );
 
     return card;
 }
@@ -309,7 +426,7 @@ async function compileSettingsAndSendToStart()
 
         setSourceCardState(card, "ERROR");
 
-        const footer = card.querySelector("source-card-footer");
+        const footer = card.querySelector(".source-card-footer");
 
         if (footer instanceof HTMLElement) 
         {
@@ -408,32 +525,75 @@ async function compileSettingsAndSendToStart()
 
 const sourceEvents = new EventSource("/api/events");
 
-sourceEvents.addEventListener("source-created", event => {
+sourceEvents.addEventListener("source-created", event =>
+{
     const data = JSON.parse(event.data);
 
-    statusText.textContent = "Status: SOURCE-CREATEd";
-    const card = document.querySelector(`[data-request-id="${data.requestId}"]`);
+    const card =
+        document.querySelector(
+            `[data-request-id="${data.requestId}"]`
+        );
 
-    if (!(card instanceof HTMLElement)) 
+    if (!(card instanceof HTMLElement))
     {
         console.error("Source card was not found");
         return;
     }
 
-    const timeoutId = creationTimeouts.get(data.requestId);
+    const timeoutId =
+        creationTimeouts.get(data.requestId);
 
-    if (timeoutId !== undefined) 
+    if (timeoutId !== undefined)
     {
         clearTimeout(timeoutId);
         creationTimeouts.delete(data.requestId);
     }
 
-    card.dataset.streamId = String(data.streamId);
-    setSourceCardState(card, "CREATED");
+    card.dataset.streamId =
+        String(data.streamId);
 
-    const footer = card.querySelector("source-card-footer");
+    setSourceCardState(
+        card,
+        "CREATED"
+    );
 
-    if (footer instanceof HTMLElement) {footer.textContent = "RTSP mount point: " + data.mountPoint;}
+    const footer =
+        card.querySelector(".source-card-footer");
+
+    if (footer instanceof HTMLElement)
+    {
+        footer.textContent =
+            "RTSP mount point: " + data.mountPoint;
+    }
+
+    statusText.textContent =
+        "Status: source #" +
+        data.streamId +
+        " created";
+});
+
+
+sourceEvents.addEventListener("source-deleted", event =>
+{
+    const data = JSON.parse(event.data);
+
+    const card =
+        document.querySelector(
+            `[data-stream-id="${data.streamId}"]`
+        );
+
+    if (!(card instanceof HTMLElement))
+    {
+        console.error("Source card was not found");
+        return;
+    }
+
+    card.remove();
+
+    statusText.textContent =
+        "Status: source #" +
+        data.streamId +
+        " deleted";
 });
 
 sourceEvents.addEventListener("source-creation-failed", event => {
@@ -441,6 +601,46 @@ sourceEvents.addEventListener("source-creation-failed", event => {
     // отменить таймер
     // поставить ERROR
     // показать reason
+});
+
+sourceEvents.addEventListener("source-started", event =>
+{
+    const data = JSON.parse(event.data);
+
+    const card =
+        document.querySelector(
+            `[data-stream-id="${data.streamId}"]`
+        );
+
+    if (!(card instanceof HTMLElement))
+    {
+        console.error("Source card was not found");
+        return;
+    }
+
+    const timeoutId =
+        startTimeouts.get(data.streamId);
+
+    if (timeoutId !== undefined)
+    {
+        clearTimeout(timeoutId);
+        startTimeouts.delete(data.streamId);
+    }
+
+    setSourceCardState(card, "RUNNING");
+
+    const footer =
+        card.querySelector(".source-card-footer");
+
+    if (footer instanceof HTMLElement)
+    {
+        footer.textContent = "Поток запущен";
+    }
+
+    statusText.textContent =
+        "Status: source #" +
+        data.streamId +
+        " running";
 });
 
 addSourceCard.addEventListener("click", openSourceCreationPanel);

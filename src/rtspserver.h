@@ -3,12 +3,17 @@
 #include "thread"
 #include "unordered_map"
 
+#include "sourcecommands.h"
+
 #include "gst/rtsp-server/rtsp-server.h"
+
 
 struct RtspSourceData
 {
+    std::string mountPoint;
     GstRTSPMediaFactory* factory = nullptr;
     bool mounted = false;
+    CreateSourceCommand configInfo;
 };
 
 
@@ -18,7 +23,7 @@ public:
     RtspServer();
     ~RtspServer();
 
-    bool addSource(const std::string& mountPoint);
+    bool addSource(const std::string& mountPoint, const CreateSourceCommand& configInfo);
     bool startSource(const std::string& mountPoint);
 
 private:

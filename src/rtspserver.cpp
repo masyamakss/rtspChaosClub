@@ -55,8 +55,11 @@ RtspServer::~RtspServer()
     
     if (m_mountPoints != nullptr)
     {
-        for (auto& [mountPoint, sourceData] : m_sources)
+        for (auto& sourcePair : m_sources)
         {
+            const std::string& mountPoint = sourcePair.first;
+            RtspSourceData& sourceData = sourcePair.second;
+
             if (sourceData.factory != nullptr)
             {
                 g_object_unref(sourceData.factory);
@@ -89,7 +92,8 @@ RtspServer::~RtspServer()
     }
 }
 
-bool RtspServer::addSource(const std::string& mountPoint)
+
+bool RtspServer::addSource(const std::string& mountPoint, const CreateSourceCommand& configInfo)
 {
     if (m_sources.find(mountPoint) != m_sources.end())
     {
@@ -98,6 +102,8 @@ bool RtspServer::addSource(const std::string& mountPoint)
 
     RtspSourceData sourceData{};
     sourceData.factory = gst_rtsp_media_factory_new();
+    sourceData.mountPoint = mountPoint;
+    sourceData.configInfo = configInfo;
 
     gst_rtsp_media_factory_set_shared(sourceData.factory, true);
 

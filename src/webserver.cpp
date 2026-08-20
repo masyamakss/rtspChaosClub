@@ -8,6 +8,7 @@ WebServer::WebServer(InfoBus* infoBus, int preferredPort)
     infoBus->subscribe<SourceCreatedEvent>([this](SourceCreatedEvent createdCard){onCreatedCardHandler(createdCard);});
     infoBus->subscribe<SourceCreationFailedEvent>([this](SourceCreationFailedEvent failedCard){onFailedToCreateCardHandler(failedCard);});
     infoBus->subscribe<DeletedSourceEvent>([this](DeletedSourceEvent deletedCard){onDeletedCardHandler(deletedCard);});
+    infoBus->subscribe<StartSourceEvent>([this](StartSourceEvent startedCard){onStartedCardHandler(startedCard);});
 }
 
 WebServer::~WebServer()
@@ -258,6 +259,40 @@ void WebServer::configureRoutes()
 
         std::cerr << "streamId: " << streamId << '\n';
     });
+
+    m_server.Post("/api/source/start",[this](const httplib::Request& request, httplib::Response& response)
+    {
+        auto jsonBody = request.body;
+        std::cerr << "POST body: " << request.body << '\n';
+
+        Json::Value postRoot;
+        Json::Reader postReader;
+        if (!postReader.parse(jsonBody, postRoot))
+        {
+            std::cerr << "JSON in POST body is broken \n";
+            response.status = 400;
+            response.set_content("JSON in POST body is broken", "text/plain");
+            return;
+        } 
+
+        if (!postRoot["streamId"].isUInt64())
+        {
+            response.status = 400;
+            response.set_content("Invalid streamId", "text/plain");
+            return;
+        }
+
+        const std::uint64_t streamId = postRoot["streamId"].asUInt64();
+
+        response.status = 200;
+        response.set_content("Valid streamId", "text/plain");
+
+        StartSourceCommand startCard;
+        startCard.streamId = streamId;
+        m_infoBus->post(startCard);
+
+        std::cerr << "streamId: " << streamId << '\n';
+    });
 }
 
 void WebServer::tryBuildCreateSourceCommand(Json::Value postRoot, CreateSourceCommand& command, std::string& errorText)
@@ -394,6 +429,30 @@ void WebServer::onFailedToCreateCardHandler(const SourceCreationFailedEvent& eve
     std::string message;
 
     message += "event: source-creation-failed\n";
+    message += "data: ";
+    message += jsonText;
+    message += "\n\n";
+
+    pushSseEvent(std::move(message));
+}
+
+
+void WebServer::onStartedCardHandler(const StartSourceEvent& event)
+{
+
+    std::cerr << "InfoBus sent info of started source\n";
+    Json::Value json;
+
+    json["streamId"] = Json::UInt64(event.streamId);
+
+    Json::StreamWriterBuilder writer;
+    writer["indentation"] = "";
+
+    const std::string jsonText = Json::writeString(writer, json);
+
+    std::string message;
+
+    message += "event: source-started\n";
     message += "data: ";
     message += jsonText;
     message += "\n\n";

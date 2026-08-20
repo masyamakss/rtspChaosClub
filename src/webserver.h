@@ -49,8 +49,8 @@ private:
 
     void onCreatedCardHandler(const SourceCreatedEvent& event);
     void onFailedToCreateCardHandler(const SourceCreationFailedEvent& event);
-
     void onDeletedCardHandler(const DeletedSourceEvent& event);
+    void onStartedCardHandler(const StartSourceEvent& event);
 
     InfoBus* m_infoBus = nullptr;
 

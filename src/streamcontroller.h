@@ -1,7 +1,7 @@
 #pragma once
 
 #include "infobus.h"
-#include "sourcecommands.h"
+#include "rtspserver.h"
 
 #include <gst/gst.h>
 #include <iostream>
@@ -31,8 +31,11 @@ public:
 private:
     InfoBus* m_infobus = nullptr;
 
-    void startCommandFromWebServerHandler(const CreateSourceCommand&);
+    RtspServer* rtspServer = nullptr;
+
+    void createCommandFromWebServerHandler(const CreateSourceCommand&);
     void deleteCommandFromWebServerHandler(const DeleteSourceCommand&);
+    void startCommandFromWebServerHandler(const StartSourceCommand&);
 
     std::uint64_t idCounter = 0;
     std::unordered_map<std::uint64_t, StreamData> m_observedStream;

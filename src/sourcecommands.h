@@ -37,3 +37,13 @@ struct DeletedSourceEvent
 {
     std::uint64_t streamId;
 };
+
+struct StartSourceCommand
+{
+    std::uint64_t streamId;
+};
+
+struct StartSourceEvent
+{
+    std::uint64_t streamId;
+};
