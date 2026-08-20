@@ -14,6 +14,7 @@ struct RtspSourceData
     GstRTSPMediaFactory* factory = nullptr;
     bool mounted = false;
     CreateSourceCommand configInfo;
+    GObject* appsrcData = nullptr;
 };
 
 
@@ -38,4 +39,6 @@ private:
     guint m_attachId = 0;
 
     std::unordered_map<std::string, RtspSourceData> m_sources;
+
+    void onMediaConfigure();
 };

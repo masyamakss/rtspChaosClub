@@ -116,6 +116,13 @@ bool RtspServer::addSource(const std::string& mountPoint, const CreateSourceComm
         "! rtph264pay name=pay0 pt=96 )"
     );
 
+    g_signal_connect(
+        sourceData.factory,
+        "media-configure",
+        G_CALLBACK(RtspServer::onMediaConfigure),
+        this
+    );
+
     m_sources.emplace(mountPoint, sourceData);
     
     return true;
