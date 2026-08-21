@@ -5,8 +5,11 @@ find_package(PkgConfig REQUIRED)
 find_package(Threads REQUIRED)
 find_package(jsoncpp REQUIRED)
 
-pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET gstreamer-1.0)
-pkg_check_modules(GST_RTSP_SERVER REQUIRED IMPORTED_TARGET gstreamer-rtsp-server-1.0)
+pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET
+    gstreamer-1.0
+    gstreamer-app-1.0
+    gstreamer-rtsp-server-1.0
+)
 
 add_subdirectory(third_party/webview-0.12.0
                 EXCLUDE_FROM_ALL)
@@ -42,7 +45,9 @@ add_executable(rtspChaosClub
                 src/sourcecommands.h
                 src/infobus.h
                 src/rtspserver.h
-                src/rtspserver.cpp)
+                src/rtspserver.cpp
+                src/syntheticvideogenerator.cpp
+                src/syntheticvideogenerator.h)
 
 target_link_libraries(rtspChaosClub PRIVATE
     PkgConfig::GSTREAMER
@@ -50,7 +55,6 @@ target_link_libraries(rtspChaosClub PRIVATE
     webview::core
     web_resources
     jsoncpp_lib
-    PkgConfig::GST_RTSP_SERVER
 )
 
 target_include_directories(rtspChaosClub PRIVATE

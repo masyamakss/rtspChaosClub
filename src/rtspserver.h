@@ -1,20 +1,23 @@
 #pragma once
 
+#include <iostream>
 #include "thread"
 #include "unordered_map"
 
 #include "sourcecommands.h"
 
 #include "gst/rtsp-server/rtsp-server.h"
-
+#include <gst/app/gstappsrc.h>
 
 struct RtspSourceData
 {
-    std::string mountPoint;
     GstRTSPMediaFactory* factory = nullptr;
+    GstRTSPMedia* media = nullptr;
+    GstAppSrc* appsrcData = nullptr;
+    
     bool mounted = false;
+    std::string mountPoint;
     CreateSourceCommand configInfo;
-    GObject* appsrcData = nullptr;
 };
 
 
@@ -40,5 +43,6 @@ private:
 
     std::unordered_map<std::string, RtspSourceData> m_sources;
 
-    void onMediaConfigure();
+    static void onMediaConfigure(GstRTSPMediaFactory* factory, GstRTSPMedia* media, gpointer userData);
+    static void onMediaUnprepared(GstRTSPMedia* media, gpointer userData);
 };

@@ -116,12 +116,7 @@ bool RtspServer::addSource(const std::string& mountPoint, const CreateSourceComm
         "! rtph264pay name=pay0 pt=96 )"
     );
 
-    g_signal_connect(
-        sourceData.factory,
-        "media-configure",
-        G_CALLBACK(RtspServer::onMediaConfigure),
-        this
-    );
+    g_signal_connect(sourceData.factory, "media-configure", G_CALLBACK(&RtspServer::onMediaConfigure), this);
 
     m_sources.emplace(mountPoint, sourceData);
     
@@ -150,4 +145,114 @@ bool RtspServer::startSource(const std::string& mountPoint)
 
     sourceData.mounted = true;
     return true;
+}
+
+void RtspServer::onMediaConfigure(GstRTSPMediaFactory* factory, GstRTSPMedia* media, gpointer userData)
+{
+    RtspServer* server = static_cast<RtspServer*>(userData);
+    GstElement* pipeline = gst_rtsp_media_get_element(media);
+
+    if (pipeline == nullptr)
+    {
+        return;
+    }
+
+    RtspSourceData* sourceData = nullptr;
+
+    for (auto& sourcePair : server->m_sources)
+    {
+        if (sourcePair.second.factory == factory)
+        {
+            sourceData = &sourcePair.second;
+            break;
+        }
+    }
+
+    if (sourceData == nullptr)
+    {
+        gst_object_unref(pipeline);
+        return;
+    }
+
+    sourceData->media = media;
+    
+    g_signal_connect(media, "unprepared", G_CALLBACK(&RtspServer::onMediaUnprepared), server);
+
+    GstElement* appsrc = gst_bin_get_by_name(GST_BIN(pipeline), "source");
+
+    if (appsrc == nullptr)
+    {
+        gst_object_unref(pipeline);
+        return;
+    }
+
+    std::cerr << "appsrc найден\n";
+
+    const std::string& resolution = sourceData->configInfo.resolution;
+
+    const std::size_t separator = resolution.find('x');
+
+    if (separator == std::string::npos)
+    {
+        gst_object_unref(appsrc);
+        gst_object_unref(pipeline);
+        return;
+    }
+
+    const int width = std::stoi(resolution.substr(0, separator));
+
+    const int height = std::stoi(resolution.substr(separator + 1));
+
+    g_object_set(
+        appsrc,
+        "is-live", TRUE,
+        "format", GST_FORMAT_TIME,
+        "do-timestamp", TRUE,
+        nullptr
+    );
+
+    GstCaps* frameInfo = gst_caps_new_simple(
+                            "video/x-raw",
+                            "format", G_TYPE_STRING, "BGR",
+                            "width", G_TYPE_INT, width,
+                            "height", G_TYPE_INT, height,
+                            "framerate", GST_TYPE_FRACTION, 30, 1,
+                            nullptr
+                        );
+
+    gst_app_src_set_caps(
+        GST_APP_SRC(appsrc),
+        frameInfo
+    );
+
+    sourceData->appsrcData = GST_APP_SRC(appsrc);
+
+    gst_caps_unref(frameInfo);
+
+    gst_object_unref(pipeline);
+}
+
+void RtspServer::onMediaUnprepared(GstRTSPMedia* media, gpointer userData)
+{
+    RtspServer* server = static_cast<RtspServer*>(userData);
+
+    for (auto& sourcePair : server->m_sources)
+    {
+        RtspSourceData& sourceData = sourcePair.second;
+
+        if (sourceData.media != media)
+        {
+            continue;
+        }
+
+        if (sourceData.appsrcData != nullptr)
+        {
+            gst_object_unref(sourceData.appsrcData);
+            sourceData.appsrcData = nullptr;
+        }
+
+        sourceData.media = nullptr;
+
+        break;
+    }
 }
