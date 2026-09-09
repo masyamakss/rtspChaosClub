@@ -5,6 +5,7 @@
 #include "unordered_map"
 
 #include "sourcecommands.h"
+#include "syntheticvideogenerator.h"
 
 #include "gst/rtsp-server/rtsp-server.h"
 #include <gst/app/gstappsrc.h>
@@ -18,6 +19,8 @@ struct RtspSourceData
     bool mounted = false;
     std::string mountPoint;
     CreateSourceCommand configInfo;
+
+    std::unique_ptr<SyntheticVideoGenerator> generator;
 };
 
 

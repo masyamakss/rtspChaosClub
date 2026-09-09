@@ -118,7 +118,7 @@ bool RtspServer::addSource(const std::string& mountPoint, const CreateSourceComm
 
     g_signal_connect(sourceData.factory, "media-configure", G_CALLBACK(&RtspServer::onMediaConfigure), this);
 
-    m_sources.emplace(mountPoint, sourceData);
+    m_sources.emplace(mountPoint, std::move(sourceData));
     
     return true;
 }
@@ -203,29 +203,17 @@ void RtspServer::onMediaConfigure(GstRTSPMediaFactory* factory, GstRTSPMedia* me
 
     const int height = std::stoi(resolution.substr(separator + 1));
 
-    g_object_set(
-        appsrc,
-        "is-live", TRUE,
-        "format", GST_FORMAT_TIME,
-        "do-timestamp", TRUE,
-        nullptr
-    );
+    g_object_set(appsrc, "is-live", TRUE, "format", GST_FORMAT_TIME, "do-timestamp", TRUE, nullptr);
 
-    GstCaps* frameInfo = gst_caps_new_simple(
-                            "video/x-raw",
-                            "format", G_TYPE_STRING, "BGR",
-                            "width", G_TYPE_INT, width,
-                            "height", G_TYPE_INT, height,
-                            "framerate", GST_TYPE_FRACTION, 30, 1,
-                            nullptr
-                        );
+    GstCaps* frameInfo = gst_caps_new_simple("video/x-raw", "format", G_TYPE_STRING, "BGR", "width", G_TYPE_INT, width,
+                            "height", G_TYPE_INT, height, "framerate", GST_TYPE_FRACTION, 30, 1, nullptr);
 
-    gst_app_src_set_caps(
-        GST_APP_SRC(appsrc),
-        frameInfo
-    );
+    gst_app_src_set_caps(GST_APP_SRC(appsrc), frameInfo);
 
     sourceData->appsrcData = GST_APP_SRC(appsrc);
+
+    sourceData->generator = std::make_unique<SyntheticVideoGenerator>(width, height, sourceData->configInfo.cubeSpeed, sourceData->configInfo.backgroundSpeed);
+    sourceData->generator->start();
 
     gst_caps_unref(frameInfo);
 
