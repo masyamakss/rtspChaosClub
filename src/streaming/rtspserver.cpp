@@ -107,7 +107,6 @@ bool RtspServer::addSource(const std::string& mountPoint, const CreateSourceComm
 
     gst_rtsp_media_factory_set_shared(sourceData.factory, true);
 
-
     gst_rtsp_media_factory_set_launch(
         sourceData.factory,
         "( appsrc name=source "
@@ -213,7 +212,10 @@ void RtspServer::onMediaConfigure(GstRTSPMediaFactory* factory, GstRTSPMedia* me
     sourceData->appsrcData = GST_APP_SRC(appsrc);
 
     sourceData->generator = std::make_unique<SyntheticVideoGenerator>(width, height, sourceData->configInfo.cubeSpeed, sourceData->configInfo.backgroundSpeed);
+    sourceData->feeder = std::make_unique<FrameFeeder>(sourceData->generator.get(), sourceData->appsrcData);
+
     sourceData->generator->start();
+    sourceData->feeder->start();
 
     gst_caps_unref(frameInfo);
 
@@ -231,6 +233,18 @@ void RtspServer::onMediaUnprepared(GstRTSPMedia* media, gpointer userData)
         if (sourceData.media != media)
         {
             continue;
+        }
+
+        if (sourceData.feeder)
+        {
+            sourceData.feeder->stop();
+            sourceData.feeder.reset();
+        }
+
+        if (sourceData.generator)
+        {
+            sourceData.generator->stop();
+            sourceData.generator.reset();
         }
 
         if (sourceData.appsrcData != nullptr)

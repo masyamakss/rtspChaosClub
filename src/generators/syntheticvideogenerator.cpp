@@ -6,13 +6,11 @@ SyntheticVideoGenerator::SyntheticVideoGenerator(int width, int height, double c
       m_cubeSpeed(cubeSpeed),
       m_backgroundSpeed(backgroundSpeed)
 {
-    const std::size_t frameSize =
-        static_cast<std::size_t>(m_width) *
-        static_cast<std::size_t>(m_height) * 3;
+    m_frameSize = static_cast<std::size_t>(m_width) * static_cast<std::size_t>(m_height) * 3;
 
-    m_frontFrame.resize(frameSize);
-    m_backFrame.resize(frameSize);
-    m_frameBackground.resize(frameSize);
+    m_frontFrame.resize(m_frameSize);
+    m_backFrame.resize(m_frameSize);
+    m_frameBackground.resize(m_frameSize);
 
     initializeBackground();
 }
@@ -78,9 +76,9 @@ void SyntheticVideoGenerator::generateFrame(std::vector<std::uint8_t>& frame, do
 
 bool SyntheticVideoGenerator::takeLatestFrame(std::vector<std::uint8_t>& frame)
 {
-    if (frame.size() != frameSize)
+    if (frame.size() != m_frameSize)
     {
-        frame.resize(frameSize);
+        frame.resize(m_frameSize);
     }
 
     std::lock_guard<std::mutex> lock(m_frameMutex);
@@ -115,8 +113,7 @@ Point2D SyntheticVideoGenerator::project(const Point3D& point)
 {
     const double focalLength = 500.0;
 
-    return {static_cast<int>(m_width / 2.0 + focalLength * point.x / point.z),
-        static_cast<int>(m_height / 2.0 - focalLength * point.y / point.z)};
+    return {static_cast<int>(m_width / 2.0 + focalLength * point.x / point.z), static_cast<int>(m_height / 2.0 - focalLength * point.y / point.z)};
 }
 
 void SyntheticVideoGenerator::initializeBackground(double initialOffset)

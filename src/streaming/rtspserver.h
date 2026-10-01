@@ -5,7 +5,7 @@
 #include "unordered_map"
 
 #include "sourcecommands.h"
-#include "syntheticvideogenerator.h"
+#include "frame_feeder.h"
 
 #include "gst/rtsp-server/rtsp-server.h"
 #include <gst/app/gstappsrc.h>
@@ -21,6 +21,7 @@ struct RtspSourceData
     CreateSourceCommand configInfo;
 
     std::unique_ptr<SyntheticVideoGenerator> generator;
+    std::unique_ptr<FrameFeeder> feeder;
 };
 
 

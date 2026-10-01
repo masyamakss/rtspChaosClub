@@ -47,7 +47,7 @@ private:
 
     std::vector<std::uint8_t> m_frontFrame;
     std::vector<std::uint8_t> m_backFrame;
-    std::size_t frameSize;
+    std::size_t m_frameSize;
 
     std::mutex m_frameMutex;
 
@@ -60,7 +60,6 @@ private:
     void drawBackground(std::vector<std::uint8_t>& frame, double deltaTime);
     void drawCube(std::vector<uint8_t> &frame, double deltaTime);
     void drawLine(std::vector<uint8_t> &frame, const Point2D &start, const Point2D &end);
-    void saveFrameToPpm(const std::vector<uint8_t> &frame, const std::__cxx11::string &fileName);
     Point3D rotatePoint(const Point3D& point, double angle);
     Point2D project(const Point3D& point);
     Point3D m_cubePosition{0.0, 0.0, 5.0};

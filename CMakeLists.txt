@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.10.0)
+
 project(rtspChaosClub VERSION 0.1.0 LANGUAGES C CXX)
 
 find_package(PkgConfig REQUIRED)
@@ -11,10 +12,14 @@ pkg_check_modules(GSTREAMER REQUIRED IMPORTED_TARGET
     gstreamer-rtsp-server-1.0
 )
 
-add_subdirectory(third_party/webview-0.12.0
-                EXCLUDE_FROM_ALL)
+add_subdirectory(
+    third_party/webview-0.12.0
+    EXCLUDE_FROM_ALL
+)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/third_party/cmrc")
+list(APPEND CMAKE_MODULE_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/third_party/cmrc"
+)
 
 include(CMakeRC)
 
@@ -30,24 +35,43 @@ cmrc_add_resource_library(
 )
 
 add_executable(rtspChaosClub
-                WIN32
-                src/main.cpp
-                src/webserver.h
-                src/webserver.cpp
-                src/application.h
-                src/application.cpp
-                src/webviewwindow.h
-                src/webviewwindow.cpp
-                src/embeddedresources.h
-                src/embeddedresources.cpp
-                src/streamcontroller.h
-                src/streamcontroller.cpp
-                src/sourcecommands.h
-                src/infobus.h
-                src/rtspserver.h
-                src/rtspserver.cpp
-                src/syntheticvideogenerator.cpp
-                src/syntheticvideogenerator.h)
+    WIN32
+
+    # Root
+    src/root/main.cpp
+    src/root/application.h
+    src/root/application.cpp
+
+    # Web
+    src/web/webserver.h
+    src/web/webserver.cpp
+    src/web/webviewwindow.h
+    src/web/webviewwindow.cpp
+    src/web/embeddedresources.h
+    src/web/embeddedresources.cpp
+
+    # Stream controller
+    src/stream_controller/streamcontroller.h
+    src/stream_controller/streamcontroller.cpp
+
+    # InfoBus
+    src/infobus/infobus.h
+    src/infobus/sourcecommands.h
+
+    # Streaming
+    src/streaming/rtspserver.h
+    src/streaming/rtspserver.cpp
+    src/streaming/frame_feeder.h
+    src/streaming/frame_feeder.cpp
+
+    # Generators
+    src/generators/syntheticvideogenerator.h
+    src/generators/syntheticvideogenerator.cpp
+)
+
+target_compile_features(rtspChaosClub PRIVATE
+    cxx_std_17
+)
 
 target_link_libraries(rtspChaosClub PRIVATE
     PkgConfig::GSTREAMER
@@ -59,4 +83,13 @@ target_link_libraries(rtspChaosClub PRIVATE
 
 target_include_directories(rtspChaosClub PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party/cpp_httplib
-    ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/root
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/web
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/stream_controller
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/infobus
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/streaming
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/generators
+)
