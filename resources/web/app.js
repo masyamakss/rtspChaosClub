@@ -200,12 +200,12 @@ function createSourceCard(requestId, settings)
     actions.className = "source-card-actions";
 
 
-    const runSourceButton = document.createElement("button");
-    runSourceButton.className = "source-start-button";
-    runSourceButton.textContent = "Запустить";
-    runSourceButton.disabled = true;
+    const runOrStopButton = document.createElement("button");
+    runOrStopButton.className = "source-start-button";
+    runOrStopButton.textContent = "Запустить";
+    runOrStopButton.disabled = true;
 
-    runSourceButton.addEventListener("click", async () => 
+    runOrStopButton.addEventListener("click", async () =>
     {
         const streamId = Number(card.dataset.streamId);
 
@@ -215,70 +215,134 @@ function createSourceCard(requestId, settings)
             return;
         }
 
-        runSourceButton.disabled = true;
-        deleteSourceButton.disabled = true;
+        const currentState = card.dataset.state;
 
-        setSourceCardState(card, "STARTING");
-        footer.textContent = "Запуск потока";
 
-        const timeoutId = window.setTimeout(() => 
+        // =========================
+        // START
+        // =========================
+
+        if (currentState === "CREATED" ||
+            currentState === "STOPPED")
         {
-            if (card.dataset.state !== "STARTING") 
+            runOrStopButton.disabled = true;
+            deleteSourceButton.disabled = true;
+
+            setSourceCardState(card, "STARTING");
+
+            runOrStopButton.textContent = "Запуск...";
+            footer.textContent = "Запуск потока";
+
+            const timeoutId = window.setTimeout(() =>
             {
-                return;
-            }
-
-            footer.textContent =
-                "StreamController не подтвердил запуск за 15 секунд";
-
-            statusText.textContent =
-                "Status: source #" + streamId + " start timed out";
-
-            deleteSourceButton.disabled = false;
-            runSourceButton.disabled = false;
-
-            startTimeouts.delete(streamId);
-        }, 15000);
-
-        startTimeouts.set(streamId, timeoutId);
-
-        try
-        {
-            const response = await fetch(
-                "/api/source/start",
+                if (card.dataset.state !== "STARTING")
                 {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ streamId })
+                    return;
                 }
-            );
 
-            if (!response.ok)
-            {
-                throw new Error("Start request failed");
-            }
-        }
-        catch (error)
-        {
-            const timeoutId = startTimeouts.get(streamId);
+                footer.textContent = "StreamController не подтвердил запуск за 15 секунд";
 
-            if (timeoutId !== undefined)
-            {
-                clearTimeout(timeoutId);
+                statusText.textContent = "Status: source #" + streamId + " start timed out";
+
+                runOrStopButton.textContent = "Запустить";
+                runOrStopButton.disabled = false;
+                deleteSourceButton.disabled = false;
+
                 startTimeouts.delete(streamId);
+
+            }, 15000);
+
+            startTimeouts.set(streamId, timeoutId);
+
+            try
+            {
+                const response = await fetch(
+                    "/api/source/start",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ streamId })
+                    }
+                );
+
+                if (!response.ok)
+                {
+                    throw new Error("Start request failed");
+                }
+            }
+            catch (error)
+            {
+                const timeoutId = startTimeouts.get(streamId);
+
+                if (timeoutId !== undefined)
+                {
+                    clearTimeout(timeoutId);
+                    startTimeouts.delete(streamId);
+                }
+
+                setSourceCardState(card, currentState);
+
+                runOrStopButton.textContent = "Запустить";
+                runOrStopButton.disabled = false;
+                deleteSourceButton.disabled = false;
+
+                footer.textContent = "Не удалось отправить команду запуска";
+
+                console.error(error);
             }
 
-            deleteSourceButton.disabled = false;
-            runSourceButton.disabled = false;
+            return;
+        }
 
-            setSourceCardState(card, "CREATED");
 
-            footer.textContent =
-                "Не удалось отправить команду запуска";
+        // =========================
+        // STOP
+        // =========================
 
-            console.error(error);
+        if (currentState === "RUNNING")
+        {
+            runOrStopButton.disabled = true;
+            deleteSourceButton.disabled = true;
+
+            setSourceCardState(card, "STOPPING");
+
+            runOrStopButton.textContent = "Остановка...";
+            footer.textContent = "Остановка потока";
+
+            try
+            {
+                const response = await fetch(
+                    "/api/source/stop",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ streamId })
+                    }
+                );
+
+                if (!response.ok)
+                {
+                    throw new Error("Stop request failed");
+                }
+            }
+            catch (error)
+            {
+                setSourceCardState(card, "RUNNING");
+
+                runOrStopButton.textContent = "Остановить";
+                runOrStopButton.disabled = false;
+                deleteSourceButton.disabled = false;
+
+                footer.textContent = "Не удалось отправить команду остановки";
+
+                console.error(error);
+            }
+
+            return;
         }
     });
 
@@ -299,7 +363,7 @@ function createSourceCard(requestId, settings)
         }
 
         deleteSourceButton.disabled = true;
-        runSourceButton.disabled = true;
+        runOrStopButton.disabled = true;
 
         footer.textContent = "Удаление элемента";
 
@@ -324,7 +388,7 @@ function createSourceCard(requestId, settings)
         catch (error)
         {
             deleteSourceButton.disabled = false;
-            runSourceButton.disabled = false;
+            runOrStopButton.disabled = false;
 
             footer.textContent =
                 "Не удалось отправить команду удаления";
@@ -335,7 +399,7 @@ function createSourceCard(requestId, settings)
 
 
     actions.append(
-        runSourceButton,
+        runOrStopButton,
         deleteSourceButton
     );
 
@@ -486,13 +550,13 @@ async function compileSettingsAndSendToStart()
             return;
         }
 
-        const runSourceButton = card.querySelector(".source-start-button");
+        const runOrStopButton = card.querySelector(".source-start-button");
 
         const deleteSourceButton = card.querySelector(".source-delete-button");
 
-        if (runSourceButton instanceof HTMLButtonElement) 
+        if (runOrStopButton instanceof HTMLButtonElement) 
         {
-            runSourceButton.disabled = false;
+            runOrStopButton.disabled = false;
         }
 
         if (deleteSourceButton instanceof HTMLButtonElement) 
@@ -641,6 +705,51 @@ sourceEvents.addEventListener("source-started", event =>
         "Status: source #" +
         data.streamId +
         " running";
+
+    const runOrStopButton = card.querySelector(".source-start-button");
+    const deleteSourceButton = card.querySelector(".source-delete-button");
+
+    if (runOrStopButton instanceof HTMLButtonElement)
+    {
+        runOrStopButton.textContent = "Остановить";
+        runOrStopButton.disabled = false;
+    }
+
+    if (deleteSourceButton instanceof HTMLButtonElement)
+    {
+        deleteSourceButton.disabled = false;
+    }
+});
+
+
+sourceEvents.addEventListener("source-removed", event =>
+{
+    const data = JSON.parse(event.data);
+
+    const card = document.querySelector(
+            `[data-stream-id="${data.streamId}"]`
+        );
+
+    if (!(card instanceof HTMLElement))
+    {
+        console.error("Source card was not found");
+        return;
+    }
+
+    card.remove();
+
+    const footer = card.querySelector(".source-card-footer");
+
+    if (footer instanceof HTMLElement)
+    {
+        footer.textContent = "Поток удален";
+    }
+
+    statusText.textContent =
+        "Status: source #" +
+        data.streamId +
+        " removed";
+
 });
 
 addSourceCard.addEventListener("click", openSourceCreationPanel);

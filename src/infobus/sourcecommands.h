@@ -47,3 +47,13 @@ struct StartSourceEvent
 {
     std::uint64_t streamId;
 };
+
+struct StopSourceCommand
+{
+    std::uint64_t streamId;
+};
+
+struct StopSourceEvent
+{
+    std::uint64_t streamId;
+};

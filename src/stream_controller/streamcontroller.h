@@ -36,6 +36,7 @@ private:
     void createCommandFromWebServerHandler(const CreateSourceCommand&);
     void deleteCommandFromWebServerHandler(const DeleteSourceCommand&);
     void startCommandFromWebServerHandler(const StartSourceCommand&);
+    void stopCommandFromWebServerHandler(const StopSourceCommand& stopCommand);
 
     std::uint64_t idCounter = 0;
     std::unordered_map<std::uint64_t, StreamData> m_observedStream;

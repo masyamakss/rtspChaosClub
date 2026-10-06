@@ -5,6 +5,7 @@ StreamController::StreamController(InfoBus *infobus) : m_infobus(infobus)
     m_infobus->subscribe<CreateSourceCommand>([this](const CreateSourceCommand& createCommand){createCommandFromWebServerHandler(createCommand);});
     m_infobus->subscribe<DeleteSourceCommand>([this](const DeleteSourceCommand& deleteCommand){deleteCommandFromWebServerHandler(deleteCommand);});
     m_infobus->subscribe<StartSourceCommand>([this](const StartSourceCommand& startCommand){startCommandFromWebServerHandler(startCommand);});
+    m_infobus->subscribe<StopSourceCommand>([this](const StopSourceCommand& stopCommand){stopCommandFromWebServerHandler(stopCommand);});
 
     rtspServer = new RtspServer();
 
@@ -67,4 +68,25 @@ void StreamController::startCommandFromWebServerHandler(const StartSourceCommand
     StartSourceEvent startedEvent{};
     startedEvent.streamId = startCommand.streamId;
     m_infobus->post(startedEvent);
+}
+
+void StreamController::stopCommandFromWebServerHandler(const StopSourceCommand& stopCommand)
+{
+    auto it = m_observedStream.find(stopCommand.streamId);
+    if (it == m_observedStream.end())
+    {
+        //Вернуть ошибку
+        return;
+    }
+    if (!rtspServer->removeSource(it->second.mountPoint))
+    {
+        //Вернуть ошибку
+        return;
+    }
+
+    it->second.state = StreamState::Stopped;
+
+    StopSourceEvent stoppedEvent{};
+    stoppedEvent.streamId = stopCommand.streamId;
+    m_infobus->post(stoppedEvent);
 }

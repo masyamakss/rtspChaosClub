@@ -33,6 +33,7 @@ public:
 
     bool addSource(const std::string& mountPoint, const CreateSourceCommand& configInfo);
     bool startSource(const std::string& mountPoint);
+    bool removeSource(const std::string& mountPoint);
 
 private:
     GstRTSPServer* m_server = nullptr;

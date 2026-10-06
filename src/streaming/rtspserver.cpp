@@ -258,3 +258,33 @@ void RtspServer::onMediaUnprepared(GstRTSPMedia* media, gpointer userData)
         break;
     }
 }
+
+bool RtspServer::removeSource(const std::string& mountPoint)
+{
+    auto it = m_sources.find(mountPoint);
+
+    if (it == m_sources.end())
+    {
+        return false;
+    }
+
+    RtspSourceData& sourceData = it->second;
+
+    if (sourceData.factory == nullptr || !sourceData.mounted)
+    {
+        return false;
+    }
+    
+    gst_rtsp_mount_points_remove_factory(m_mountPoints, sourceData.mountPoint.c_str());
+
+    if (sourceData.media != nullptr)
+    {
+        gst_rtsp_media_unprepare(sourceData.media);
+    }
+    
+    g_object_unref(sourceData.factory);
+
+    m_sources.erase(mountPoint);
+
+    return true;
+}
