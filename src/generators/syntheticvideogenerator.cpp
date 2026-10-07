@@ -35,6 +35,8 @@ void SyntheticVideoGenerator::stop()
         return;
     }
 
+    m_running = false;
+
     if (m_thread.joinable())
     {
         m_thread.join();

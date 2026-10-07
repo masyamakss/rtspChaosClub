@@ -142,6 +142,10 @@ bool RtspServer::startSource(const std::string& mountPoint)
 
     gst_rtsp_mount_points_add_factory(m_mountPoints, mountPoint.c_str(), sourceData.factory);
 
+    std::cerr << "cubeSpeed = " << sourceData.configInfo.cubeSpeed
+        << ", backgroundSpeed = " << sourceData.configInfo.backgroundSpeed
+        << '\n';
+
     sourceData.mounted = true;
     return true;
 }
@@ -261,30 +265,101 @@ void RtspServer::onMediaUnprepared(GstRTSPMedia* media, gpointer userData)
 
 bool RtspServer::removeSource(const std::string& mountPoint)
 {
+    std::cerr << "[removeSource] entered: "
+              << mountPoint << '\n';
+
     auto it = m_sources.find(mountPoint);
 
     if (it == m_sources.end())
     {
+        std::cerr << "[removeSource] source not found\n";
         return false;
     }
 
     RtspSourceData& sourceData = it->second;
 
+    std::cerr << "[removeSource] factory = "
+              << sourceData.factory
+              << ", media = "
+              << sourceData.media
+              << ", mounted = "
+              << sourceData.mounted
+              << '\n';
+
     if (sourceData.factory == nullptr || !sourceData.mounted)
     {
+        std::cerr << "[removeSource] invalid source state\n";
         return false;
     }
-    
-    gst_rtsp_mount_points_remove_factory(m_mountPoints, sourceData.mountPoint.c_str());
+
+
+    std::cerr << "[removeSource] before remove_factory\n";
+
+    gst_rtsp_mount_points_remove_factory(
+        m_mountPoints,
+        sourceData.mountPoint.c_str()
+    );
+
+    std::cerr << "[removeSource] after remove_factory\n";
+
+
+    if (sourceData.feeder)
+    {
+        std::cerr << "[removeSource] before feeder stop\n";
+
+        sourceData.feeder->stop();
+
+        std::cerr << "[removeSource] after feeder stop\n";
+    }
+    else
+    {
+        std::cerr << "[removeSource] feeder == nullptr\n";
+    }
+
+
+    if (sourceData.generator)
+    {
+        std::cerr << "[removeSource] before generator stop\n";
+
+        sourceData.generator->stop();
+
+        std::cerr << "[removeSource] after generator stop\n";
+    }
+    else
+    {
+        std::cerr << "[removeSource] generator == nullptr\n";
+    }
+
 
     if (sourceData.media != nullptr)
     {
+        std::cerr << "[removeSource] before media unprepare\n";
+
         gst_rtsp_media_unprepare(sourceData.media);
+
+        std::cerr << "[removeSource] after media unprepare\n";
     }
-    
+    else
+    {
+        std::cerr << "[removeSource] media == nullptr, skip unprepare\n";
+    }
+
+
+    std::cerr << "[removeSource] before factory unref\n";
+
     g_object_unref(sourceData.factory);
 
-    m_sources.erase(mountPoint);
+    sourceData.factory = nullptr;
+
+    std::cerr << "[removeSource] after factory unref\n";
+
+
+    std::cerr << "[removeSource] before erase\n";
+
+    m_sources.erase(it);
+
+    std::cerr << "[removeSource] after erase\n";
+    std::cerr << "[removeSource] finished\n";
 
     return true;
 }
