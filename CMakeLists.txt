@@ -53,6 +53,8 @@ add_executable(rtspChaosClub
     # Stream controller
     src/stream_controller/streamcontroller.h
     src/stream_controller/streamcontroller.cpp
+    src/stream_controller/statistics_collector.cpp
+    src/stream_controller/statistics_collector.h
 
     # InfoBus
     src/infobus/infobus.h

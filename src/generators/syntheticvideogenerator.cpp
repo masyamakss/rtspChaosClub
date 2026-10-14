@@ -1,6 +1,6 @@
 #include "syntheticvideogenerator.h"
 
-SyntheticVideoGenerator::SyntheticVideoGenerator(int width, int height, double cubeSpeed, double backgroundSpeed)
+SyntheticVideoGenerator::SyntheticVideoGenerator(int width, int height, double cubeSpeed, double backgroundSpeed, std::weak_ptr<StreamStatistics> streamStatistics)
     : m_width(width),
       m_height(height),
       m_cubeSpeed(cubeSpeed),
@@ -13,6 +13,8 @@ SyntheticVideoGenerator::SyntheticVideoGenerator(int width, int height, double c
     m_frameBackground.resize(m_frameSize);
 
     initializeBackground();
+
+    m_streamStatistics = streamStatistics;
 }
 
 
@@ -50,6 +52,7 @@ SyntheticVideoGenerator::~SyntheticVideoGenerator()
 
 void SyntheticVideoGenerator::workerLoop()
 {
+    auto statistics = m_streamStatistics.lock();
     auto previousTime = std::chrono::steady_clock::now();
     while (m_running)
     {
@@ -58,12 +61,19 @@ void SyntheticVideoGenerator::workerLoop()
         previousTime = currentTime;
 
         generateFrame(m_backFrame, deltaTime);
-
+        
         {
             std::lock_guard<std::mutex> lock(m_frameMutex);
-
+            
             m_frontFrame.swap(m_backFrame);
             m_hasFrame = true;
+        }
+        
+        if (statistics)
+        {
+            statistics->generatedFrames.fetch_add(1);
+            statistics->lastGeneratedAtUs.store(std::chrono::duration_cast<std::chrono::microseconds>(
+                std::chrono::steady_clock::now().time_since_epoch()).count());
         }
 
         std::this_thread::sleep_for(std::chrono::milliseconds(33));

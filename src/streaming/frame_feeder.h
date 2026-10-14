@@ -15,7 +15,7 @@
 class FrameFeeder
 {
 public:
-    FrameFeeder(SyntheticVideoGenerator* generator, GstAppSrc* appsrc);
+    FrameFeeder(SyntheticVideoGenerator* generator, GstAppSrc* appsrc, std::weak_ptr<StreamStatistics> streamStatistics);
 
     ~FrameFeeder();
 
@@ -31,4 +31,6 @@ private:
 
     std::thread m_thread;
     std::atomic_bool m_running{false};
+
+    std::weak_ptr<StreamStatistics> m_streamStatistics;
 };

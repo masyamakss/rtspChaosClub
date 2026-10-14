@@ -22,15 +22,19 @@ void StreamController::createCommandFromWebServerHandler(const CreateSourceComma
     data.mountPoint = "/stream-" + std::to_string(idCounter);
     data.state = StreamState::Created;
     data.streamId = idCounter;
+    data.streamStatistic = std::make_shared<StreamStatistics>();
 
-    m_observedStream[idCounter] = data;
+    {
+        std::lock_guard<std::mutex> lock(m_streamsMutex);
+        m_observedStream[idCounter] = data;
+    }
 
     SourceCreatedEvent createdCard{};
     createdCard.mountPoint = data.mountPoint;
     createdCard.requestId = createCommand.requestId;
     createdCard.streamId = idCounter;
 
-    rtspServer->addSource(data.mountPoint, data.config);
+    rtspServer->addSource(data.mountPoint, data.config, data.streamStatistic);
 
     m_infobus->post(createdCard);
     return;
@@ -40,7 +44,10 @@ void StreamController::deleteCommandFromWebServerHandler(const DeleteSourceComma
 {
     if (m_observedStream.count(deleteCommand.streamId) > 0)
     {
-        m_observedStream.erase(deleteCommand.streamId);
+        {
+            std::lock_guard<std::mutex> lock(m_streamsMutex);
+            m_observedStream.erase(deleteCommand.streamId);
+        }
     }
 
     DeletedSourceEvent deletedSource;
@@ -63,7 +70,10 @@ void StreamController::startCommandFromWebServerHandler(const StartSourceCommand
         return;
     }
 
-    it->second.state = StreamState::Running;
+    {
+        std::lock_guard<std::mutex> lock(m_streamsMutex);
+        it->second.state = StreamState::Running;
+    }   
 
     StartSourceEvent startedEvent{};
     startedEvent.streamId = startCommand.streamId;
@@ -84,7 +94,10 @@ void StreamController::stopCommandFromWebServerHandler(const StopSourceCommand& 
         return;
     }
 
-    it->second.state = StreamState::Stopped;
+    {
+        std::lock_guard<std::mutex> lock(m_streamsMutex);
+        it->second.state = StreamState::Stopped;
+    }
 
     StopSourceEvent stoppedEvent{};
     stoppedEvent.streamId = stopCommand.streamId;

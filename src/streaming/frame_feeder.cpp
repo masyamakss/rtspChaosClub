@@ -1,10 +1,9 @@
 #include "frame_feeder.h"
 
-FrameFeeder::FrameFeeder(
-    SyntheticVideoGenerator* generator,
-    GstAppSrc* appsrc)
+FrameFeeder::FrameFeeder(SyntheticVideoGenerator* generator,GstAppSrc* appsrc, std::weak_ptr<StreamStatistics> streamStatistics)
     : m_generator(generator),
-      m_appsrc(appsrc)
+      m_appsrc(appsrc),
+      m_streamStatistics(streamStatistics)
 {}
 
 void FrameFeeder::start()
@@ -40,6 +39,8 @@ FrameFeeder::~FrameFeeder()
 void FrameFeeder::workerLoop()
 {
     std::vector<uint8_t> frame;
+
+    auto statistics = m_streamStatistics.lock();
     
     while (m_running)
     {
@@ -70,7 +71,21 @@ void FrameFeeder::workerLoop()
 
         const GstFlowReturn result = gst_app_src_push_buffer(m_appsrc, buffer);
 
-        if (result != GST_FLOW_OK)
+        if (result == GST_FLOW_OK)
+        {
+            if (statistics)
+            {
+                statistics->pushedFrames.fetch_add(1);
+                statistics->pushedBytes.fetch_add(frame.size());
+
+                statistics->lastPushedAtUs.store(
+                    std::chrono::duration_cast<std::chrono::microseconds>(
+                        std::chrono::steady_clock::now().time_since_epoch()
+                    ).count()
+                );
+            }
+        }
+        else
         {
             std::cerr << "Failed to push frame: " << result << '\n';
         }

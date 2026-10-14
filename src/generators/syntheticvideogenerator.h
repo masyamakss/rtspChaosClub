@@ -11,6 +11,8 @@
 #include <iostream>
 #include <fstream>
 
+#include "stream_statistics.h"
+
 struct Point3D
 {
     double x;
@@ -27,7 +29,7 @@ struct Point2D
 class SyntheticVideoGenerator
 {
 public:
-    SyntheticVideoGenerator(int width, int height, double cubeSpeed, double backgroundSpeed);
+    SyntheticVideoGenerator(int width, int height, double cubeSpeed, double backgroundSpeed, std::weak_ptr<StreamStatistics> streamStatistics);
 
     ~SyntheticVideoGenerator();
 
@@ -83,4 +85,6 @@ private:
     void workerLoop();
 
     bool m_hasFrame = false;
+
+    std::weak_ptr<StreamStatistics> m_streamStatistics;
 };

@@ -1,27 +1,9 @@
 #pragma once
 
-#include "infobus.h"
-#include "rtspserver.h"
+#include "statistics_collector.h"
 
 #include <gst/gst.h>
 #include <iostream>
-
-enum class StreamState
-{
-    Created,
-    Running,
-    Stopped,
-    Error
-};
-
-struct StreamData
-{
-    int streamId;
-    StreamState state;
-    std::string mountPoint;
-    CreateSourceCommand config;
-};
-
 
 class StreamController
 {
@@ -40,4 +22,5 @@ private:
 
     std::uint64_t idCounter = 0;
     std::unordered_map<std::uint64_t, StreamData> m_observedStream;
+    std::mutex m_streamsMutex;
 };

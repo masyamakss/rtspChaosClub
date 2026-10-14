@@ -6,6 +6,7 @@
 
 #include "sourcecommands.h"
 #include "frame_feeder.h"
+#include "stream_statistics.h"
 
 #include "gst/rtsp-server/rtsp-server.h"
 #include <gst/app/gstappsrc.h>
@@ -22,6 +23,8 @@ struct RtspSourceData
 
     std::unique_ptr<SyntheticVideoGenerator> generator;
     std::unique_ptr<FrameFeeder> feeder;
+
+    std::weak_ptr<StreamStatistics> statistics;
 };
 
 
@@ -31,7 +34,7 @@ public:
     RtspServer();
     ~RtspServer();
 
-    bool addSource(const std::string& mountPoint, const CreateSourceCommand& configInfo);
+    bool addSource(const std::string& mountPoint, const CreateSourceCommand& configInfo, std::weak_ptr<StreamStatistics> streamStatistics);
     bool startSource(const std::string& mountPoint);
     bool removeSource(const std::string& mountPoint);
 
