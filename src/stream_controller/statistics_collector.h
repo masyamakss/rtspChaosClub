@@ -44,9 +44,8 @@ private:
 
     std::mutex& m_streamsMutex;
     const std::unordered_map<uint64_t, StreamData>& m_streams;
+    std::vector<std::pair<uint64_t, std::shared_ptr<StreamStatistics>>> m_copiedStreams;
 
-    std::thread m_thread;
-    std::atomic_bool m_running{false};
     std::mutex m_waitMutex;
     std::condition_variable m_cv;
 };

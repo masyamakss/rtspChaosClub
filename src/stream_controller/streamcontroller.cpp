@@ -8,7 +8,8 @@ StreamController::StreamController(InfoBus *infobus) : m_infobus(infobus)
     m_infobus->subscribe<StopSourceCommand>([this](const StopSourceCommand& stopCommand){stopCommandFromWebServerHandler(stopCommand);});
 
     rtspServer = new RtspServer();
-
+    m_StatisticsCollector = new StatisticsCollector(m_observedStream, m_streamsMutex);
+    m_StatisticsCollector->start();
 }
 
 void StreamController::createCommandFromWebServerHandler(const CreateSourceCommand& createCommand)

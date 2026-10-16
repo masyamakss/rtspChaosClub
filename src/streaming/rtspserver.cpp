@@ -104,6 +104,7 @@ bool RtspServer::addSource(const std::string& mountPoint, const CreateSourceComm
     sourceData.factory = gst_rtsp_media_factory_new();
     sourceData.mountPoint = mountPoint;
     sourceData.configInfo = configInfo;
+    sourceData.statistics = streamStatistics;
 
     gst_rtsp_media_factory_set_shared(sourceData.factory, true);
 

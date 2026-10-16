@@ -54,6 +54,7 @@ void SyntheticVideoGenerator::workerLoop()
 {
     auto statistics = m_streamStatistics.lock();
     auto previousTime = std::chrono::steady_clock::now();
+
     while (m_running)
     {
         const auto currentTime = std::chrono::steady_clock::now();

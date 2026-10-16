@@ -21,6 +21,8 @@ private:
     void stopCommandFromWebServerHandler(const StopSourceCommand& stopCommand);
 
     std::uint64_t idCounter = 0;
-    std::unordered_map<std::uint64_t, StreamData> m_observedStream;
+    std::unordered_map<uint64_t, StreamData> m_observedStream;
     std::mutex m_streamsMutex;
+
+    StatisticsCollector* m_StatisticsCollector = nullptr;
 };
