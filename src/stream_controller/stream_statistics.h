@@ -20,3 +20,13 @@ struct StreamStatistics
     std::atomic<std::int64_t> lastGeneratedAtUs{0};
     std::atomic<std::int64_t> lastPushedAtUs{0};
 };
+
+struct StreamStatisticsSnapshot
+{
+    uint64_t streamId;
+    uint64_t generatedFrames;
+    uint64_t pushedFrames;
+    uint64_t pushedBytes;
+    int64_t lastGeneratedAtUs;
+    int64_t lastPushedAtUs;
+};

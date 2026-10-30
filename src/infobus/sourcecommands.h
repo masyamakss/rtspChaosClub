@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <vector>
+#include "stream_statistics.h"
 
 struct CreateSourceCommand
 {
@@ -56,4 +58,9 @@ struct StopSourceCommand
 struct StopSourceEvent
 {
     std::uint64_t streamId;
+};
+
+struct StatisticsUpdatedEvent
+{
+    std::vector<StreamStatisticsSnapshot> streams;
 };

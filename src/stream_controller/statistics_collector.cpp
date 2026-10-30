@@ -1,8 +1,9 @@
 #include "statistics_collector.h"
 
-StatisticsCollector::StatisticsCollector(const std::unordered_map<uint64_t, StreamData>& streams, std::mutex& mutex)    
+StatisticsCollector::StatisticsCollector(const std::unordered_map<uint64_t, StreamData>& streams, std::mutex& mutex, InfoBus* infobus)    
     : m_streams(streams),
-      m_streamsMutex(mutex)
+      m_streamsMutex(mutex),
+      m_infobus(infobus)
 {}
 
 StatisticsCollector::~StatisticsCollector()
@@ -52,21 +53,36 @@ void StatisticsCollector::workerLoop()
         lock.unlock();
 
         {
+            m_copiedStreams.clear();
+
             mapLock.lock();
             
             for (const auto& it : m_streams)
             {
-                std::cout
-                << "Stream " << it.second.streamId
-                << " generated: " << it.second.streamStatistic->generatedFrames.load()
-                << " pushed: " << it.second.streamStatistic->pushedFrames.load()
-                << " bytes: " << it.second.streamStatistic->pushedBytes.load()
-                << '\n';
+                m_copiedStreams.emplace_back(it.first, it.second.streamStatistic);
             }
 
             mapLock.unlock();
-            
         }
+
+        std::vector<StreamStatisticsSnapshot> snapShotVector;
+        for (const auto& it : m_copiedStreams)
+        {
+            StreamStatisticsSnapshot snapShot{};
+            snapShot.streamId = it.first;
+            snapShot.lastGeneratedAtUs = it.second->lastGeneratedAtUs.load();
+            snapShot.lastPushedAtUs = it.second->lastPushedAtUs.load();
+            snapShot.pushedBytes = it.second->pushedBytes.load();
+            snapShot.pushedFrames = it.second->pushedFrames.load();
+            snapShot.generatedFrames = it.second->generatedFrames.load();
+
+            snapShotVector.emplace_back(snapShot);
+        }
+
+        StatisticsUpdatedEvent event{};
+        event.streams.swap(snapShotVector);
+
+        m_infobus->post(event);
 
         lock.lock();
     }

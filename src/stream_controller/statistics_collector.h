@@ -30,7 +30,7 @@ struct StreamData
 class StatisticsCollector
 {
 public:
-    StatisticsCollector(const std::unordered_map<uint64_t, StreamData>& streams, std::mutex& streamMutex);
+    StatisticsCollector(const std::unordered_map<uint64_t, StreamData>& streams, std::mutex& streamMutex, InfoBus* infobus);
     ~StatisticsCollector();
 
     void start();
@@ -48,4 +48,6 @@ private:
 
     std::mutex m_waitMutex;
     std::condition_variable m_cv;
+    InfoBus* m_infobus = nullptr;
+
 };

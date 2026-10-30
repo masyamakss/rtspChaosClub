@@ -10,6 +10,7 @@ WebServer::WebServer(InfoBus* infoBus, int preferredPort)
     infoBus->subscribe<DeletedSourceEvent>([this](DeletedSourceEvent deletedCard){onDeletedCardHandler(deletedCard);});
     infoBus->subscribe<StartSourceEvent>([this](StartSourceEvent startedCard){onStartedCardHandler(startedCard);});
     infoBus->subscribe<StopSourceEvent>([this](StopSourceEvent stoppedCard){onStoppedCardHandler(stoppedCard);});
+    infoBus->subscribe<StatisticsUpdatedEvent>([this](StatisticsUpdatedEvent updatedStatistics){onStatisticsUpdated(updatedStatistics);});
 }
 
 WebServer::~WebServer()
@@ -516,4 +517,19 @@ void WebServer::onStoppedCardHandler(const StopSourceEvent& event)
     message += "\n\n";
 
     pushSseEvent(std::move(message));
+}
+
+void WebServer::onStatisticsUpdated(const StatisticsUpdatedEvent& event)
+{
+        std::cerr << "[WebServer] Statistics received: "
+              << event.streams.size() << " streams\n";
+
+    for (const auto& stream : event.streams)
+    {
+        std::cerr << "Stream " << stream.streamId
+                  << " | generated: " << stream.generatedFrames
+                  << " | pushed: " << stream.pushedFrames
+                  << " | bytes: " << stream.pushedBytes
+                  << '\n';
+    }
 }

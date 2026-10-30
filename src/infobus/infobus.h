@@ -107,7 +107,7 @@ void InfoBus::post(const Event &event)
       });
       {
             std::lock_guard<std::mutex> lock(m_mutex);
-            m_tasks.push(funcForQueue);
+            m_tasks.push(std::move(funcForQueue));
       }
 
       m_cv.notify_one();

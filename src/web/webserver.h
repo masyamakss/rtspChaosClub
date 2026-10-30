@@ -52,6 +52,7 @@ private:
     void onDeletedCardHandler(const DeletedSourceEvent& event);
     void onStartedCardHandler(const StartSourceEvent& event);
     void onStoppedCardHandler(const StopSourceEvent& event);
+    void onStatisticsUpdated(const StatisticsUpdatedEvent& event);
 
     InfoBus* m_infoBus = nullptr;
 
