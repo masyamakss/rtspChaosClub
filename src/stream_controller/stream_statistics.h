@@ -29,4 +29,7 @@ struct StreamStatisticsSnapshot
     uint64_t pushedBytes;
     int64_t lastGeneratedAtUs;
     int64_t lastPushedAtUs;
+    double generatedFps{0.0};
+    double pushedFps{0.0};
+    double pushedMiBps{0.0};
 };

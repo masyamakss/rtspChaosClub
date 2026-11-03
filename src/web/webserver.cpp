@@ -521,15 +521,41 @@ void WebServer::onStoppedCardHandler(const StopSourceEvent& event)
 
 void WebServer::onStatisticsUpdated(const StatisticsUpdatedEvent& event)
 {
-        std::cerr << "[WebServer] Statistics received: "
-              << event.streams.size() << " streams\n";
+    Json::Value json(Json::objectValue);
+    Json::Value streams(Json::arrayValue);
 
-    for (const auto& stream : event.streams)
+    for (const auto& snapshot : event.streams)
     {
-        std::cerr << "Stream " << stream.streamId
-                  << " | generated: " << stream.generatedFrames
-                  << " | pushed: " << stream.pushedFrames
-                  << " | bytes: " << stream.pushedBytes
-                  << '\n';
+        Json::Value item(Json::objectValue);
+
+        item["streamId"] = Json::UInt64(snapshot.streamId);
+
+        item["generatedFrames"] = Json::UInt64(snapshot.generatedFrames);
+        item["pushedFrames"] = Json::UInt64(snapshot.pushedFrames);
+        item["pushedBytes"] = Json::UInt64(snapshot.pushedBytes);
+
+        item["lastGeneratedAtUs"] = Json::Int64(snapshot.lastGeneratedAtUs);
+        item["lastPushedAtUs"] = Json::Int64(snapshot.lastPushedAtUs);
+
+        item["generatedFps"] = snapshot.generatedFps;
+        item["pushedFps"] = snapshot.pushedFps;
+        item["pushedMiBps"] = snapshot.pushedMiBps;
+
+        streams.append(item);
     }
+
+    json["streams"] = std::move(streams);
+
+    Json::StreamWriterBuilder writer;
+
+    const std::string jsonText = Json::writeString(writer, json);
+
+    std::string message;
+
+    message += "event: statistics-updated\n";
+    message += "data: ";
+    message += jsonText;
+    message += "\n\n";
+
+    pushSseEvent(std::move(message));
 }

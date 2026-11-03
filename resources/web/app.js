@@ -752,6 +752,30 @@ sourceEvents.addEventListener("source-removed", event =>
 
 });
 
+sourceEvents.addEventListener("statistics-updated", event =>
+{
+    const data = JSON.parse(event.data);
+
+    const card = document.querySelector(`[data-stream-id="${data.streamId}"]`);
+
+    if (!(card instanceof HTMLElement))
+    {
+        console.error("Source card was not found");
+        return;
+    }
+
+
+    const footer = card.querySelector(".source-card-footer");
+
+    if (footer instanceof HTMLElement)
+    {
+        footer.textContent = "Поток удален";
+    }
+
+    statusText.textContent ="Status: source #" + data.streamId + " statistics-updated";
+
+});
+
 addSourceCard.addEventListener("click", openSourceCreationPanel);
 sourceModeToggle.addEventListener("change", updateSourceModeView);
 startButton.addEventListener("click", compileSettingsAndSendToStart);

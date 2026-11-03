@@ -26,6 +26,12 @@ struct StreamData
     std::shared_ptr<StreamStatistics> streamStatistic;
 };
 
+struct TimedStatisticsSample
+{
+    std::chrono::steady_clock::time_point timestamp;
+    std::vector<StreamStatisticsSnapshot> streams;
+};
+
 
 class StatisticsCollector
 {
@@ -50,4 +56,6 @@ private:
     std::condition_variable m_cv;
     InfoBus* m_infobus = nullptr;
 
+    std::deque<TimedStatisticsSample> m_history;
+    void calculateMetrics(StreamStatisticsSnapshot& current, std::chrono::steady_clock::time_point currentTime);
 };
