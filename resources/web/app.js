@@ -764,13 +764,7 @@ sourceEvents.addEventListener("statistics-updated", event =>
         return;
     }
 
-
-    const footer = card.querySelector(".source-card-footer");
-
-    if (footer instanceof HTMLElement)
-    {
-        footer.textContent = "Поток удален";
-    }
+    
 
     statusText.textContent ="Status: source #" + data.streamId + " statistics-updated";
 

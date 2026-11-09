@@ -32,6 +32,8 @@ cmrc_add_resource_library(
     resources/web/index.html
     resources/web/app.js
     resources/web/styles.css
+    resources/web/monitor.js
+    resources/web/monitor.html
 )
 
 add_executable(rtspChaosClub

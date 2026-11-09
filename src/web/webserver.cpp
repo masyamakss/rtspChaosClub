@@ -132,6 +132,18 @@ void WebServer::configureRoutes()
         response.set_content(appJs,"application/javascript; charset=UTF-8");
     });
 
+    m_server.Get("/monitor", [](const httplib::Request&, httplib::Response& response)
+    {
+        const auto html = EmbeddedResources::loadText("resources/web/monitor.html");
+        response.set_content(html, "text/html; charset=UTF-8");
+    });
+
+    m_server.Get("/monitor.js", [](const httplib::Request&, httplib::Response& response)
+    {
+        const auto js = EmbeddedResources::loadText("resources/web/monitor.js");
+        response.set_content(js, "application/javascript; charset=UTF-8");
+    });
+
     m_server.Post("/api/test", [this](const httplib::Request& request, httplib::Response& response)
     {   
         auto jsonBody = request.body;
@@ -547,6 +559,7 @@ void WebServer::onStatisticsUpdated(const StatisticsUpdatedEvent& event)
     json["streams"] = std::move(streams);
 
     Json::StreamWriterBuilder writer;
+    writer["indentation"] = "";
 
     const std::string jsonText = Json::writeString(writer, json);
 
